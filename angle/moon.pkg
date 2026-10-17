@@ -1,0 +1,5 @@
+///|
+/// angle — 机械角度到电角度转换与归一化（纯计算，四后端）
+///
+/// 电角度 = 机械角度 × 极对数。归一化到 [0, 2π)。
+supported_targets = "wasm+wasm-gc+js+native"

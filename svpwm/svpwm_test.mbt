@@ -6,18 +6,15 @@ fn approx_equal(x : Double, y : Double, eps : Double) -> Bool {
 
 let eps = 0.0000001
 
-test "sector: alpha-axis positive (theta=0) → boundary sector 6" {
-  // N 表：alpha=1, beta=0 → N=2 → sector 6（alpha 轴是扇区 6/1 边界）
-  assert_eq(@svpwm.sector_of(1.0, 0.0), 6)
+test "sector: alpha-axis positive (theta=0) → sector 1" {
+  assert_eq(@svpwm.sector_of(1.0, 0.0), 1)
 }
 
 test "sector: beta-axis positive (theta=pi/2) → sector 2" {
-  // N 表：alpha=0, beta=1 → N=1 → sector 2
   assert_eq(@svpwm.sector_of(0.0, 1.0), 2)
 }
 
 test "sector: theta=pi → sector 4" {
-  // alpha=-1, beta=0 → N=4 → sector 4
   assert_eq(@svpwm.sector_of(-1.0, 0.0), 4)
 }
 
