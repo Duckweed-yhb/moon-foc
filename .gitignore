@@ -1,0 +1,7 @@
+_build/
+.moon/
+*.exe
+*.obj
+*.exp
+*.lib
+.DS_Store
