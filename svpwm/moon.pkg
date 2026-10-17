@@ -1,0 +1,12 @@
+///|
+/// svpwm — 空间矢量 PWM 调制内核（纯计算，四后端）
+///
+/// 输入 alpha/beta 参考矢量 + 母线电压 Vdc + 开关周期 Ts，
+/// 输出三相占空比。
+///
+/// 约定：
+///   - 幅值不变约定，与 coord/ 包一致
+///   - 线性调制区最大输出 |Vref| = Vdc/sqrt(3)（六边形内切圆）
+///   - 过调制时按比例钳位 T1+T2 ≤ Ts
+///   - 角度单位弧度
+supported_targets = "wasm+wasm-gc+js+native"
