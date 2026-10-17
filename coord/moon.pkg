@@ -1,0 +1,10 @@
+///|
+/// coord — 坐标变换（Clarke / invClarke / Park / invPark，纯计算四后端）
+///
+/// 幅值不变约定。角度单位弧度。无 I/O，无 platform 依赖，
+/// 这是 FOC 链路里最需要确定性、也最值得离线单测的部分。
+supported_targets = "wasm+wasm-gc+js+native"
+
+import {
+  "moonbitlang/core/math" @math,
+}

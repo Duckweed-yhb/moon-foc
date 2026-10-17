@@ -1,5 +1,9 @@
-package "Duckweed/moon-foc"
+name = "Duckweed/moon-foc"
+
 version = "0.1.0"
+
 description = "PMSM SVPWM modulation and coordinate transform numerical kernel"
 
-root = "."
+readme = "README.md"
+
+license = "MIT"

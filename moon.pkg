@@ -1,0 +1,4 @@
+// 根包：占位，实际实现分散在 coord/ 和 svpwm/ 子包。
+supported_targets = "wasm+wasm-gc+js+native"
+
+import {}
