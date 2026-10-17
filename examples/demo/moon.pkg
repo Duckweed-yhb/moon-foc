@@ -1,0 +1,10 @@
+///|
+/// examples/demo — 最小可运行示例：输入三相电流和电角度，打印 alpha/beta/dq/三相占空比。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/coord" @coord,
+  "Duckweed/moon-foc/svpwm" @svpwm,
+}
