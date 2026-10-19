@@ -66,3 +66,19 @@ maintained out-of-tree; this repository only carries the numeric fixtures.
 ## License
 
 MIT © 2026 Duckweed-yhb
+
+## AI tool usage
+
+This project was built with AI assistance, but the goal, scope, quality boundaries, and
+open-source compliance are controlled by the author:
+
+- **AI assisted with**: boilerplate for Clarke / Park / SVPWM functions, test case generation,
+  initial README draft.
+- **Human controlled**: project selection (motor control numerical kernel), the pure-math
+  boundary (no I/O), the differentiation from `hwlxmm/dsp` (SVPWM chain vs instantaneous
+  power), the design of the 20 MATLAB baseline inputs, hand-computed expected values.
+- **How AI-generated code is verified**: each AI-generated test is checked against textbook
+  formulas; Clarke/Park round-trip tests verify mathematical consistency; SVPWM sector
+  detection uses 6 angle points; CI must be green before merge.
+- **What is not done**: no code copied from TI C2000 / ST MCSDK (only math steps cross-referenced);
+  no self-hosting expected values; no AI-generated test data taken as truth.
