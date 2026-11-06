@@ -33,18 +33,17 @@ pub fn action_times(
   if vref <= 0.000000000001 {
     return (0.0, 0.0)
   }
-  // theta_e 是参考矢量相对 alpha 轴的电角度（弧度）
-  let theta_e = @math.atan2(beta, alpha)
-  // 把 theta_e 折到 [0, pi/3) 内，对应当前扇区的局部角
+  // theta_e 先归一到 [0, 2pi)，再减扇区起点，得到扇区内局部角 [0, pi/3)；
+  // 直接用带符号 atan2 会让下半平面扇区（5/6）折出负的作用时间。
+  let theta_raw = @math.atan2(beta, alpha)
+  let theta_pos = if theta_raw < 0.0 {
+    theta_raw + 3.141592653589793 * 2.0
+  } else {
+    theta_raw
+  }
   let sector_d = sector.to_double()
   let sector_start = (sector_d - 1.0) * 3.141592653589793 / 3.0
-  let local_angle = theta_e - sector_start
-  // 负角度折回来（跨扇区边界时 theta_e 可能 < sector_start）
-  let local_norm = if local_angle < 0.0 {
-    local_angle + 3.141592653589793 * 2.0 / 3.0
-  } else {
-    local_angle
-  }
+  let local_norm = theta_pos - sector_start
   // T1/T2 公式（幅值不变约定，系数 sqrt(3)）
   let k = 3.0.sqrt() * ts / vdc
   let t1 = k * vref * @math.sin(3.141592653589793 / 3.0 - local_norm)
