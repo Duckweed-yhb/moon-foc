@@ -116,3 +116,28 @@ test "sector 6: linear timing non-negative, duty order da >= dc >= db" {
   let (da, db, dc) = @svpwm.duties(alpha, beta, ts, vdc)
   assert_true(da >= dc && dc >= db)
 }
+
+// F2 手算绝对值基准：Vref=6 V、θ=π/6（扇区 1 中点），Vdc=24 V、Ts=1e-4 s。
+// 线性区上限 Vdc/√3≈13.86 V，6 V 远在内部；θ=π/6 时 sin(π/6)=0.5，T1=T2。
+// 期望值由教材公式独立手算：T1=T2=(√3·Ts/Vdc)·Vref·sin(π/6)，
+// 占空比按七段式扇区 1 映射 T_on 后做 2·T_on/Ts-1，不取自本库运行输出。
+let oracle_vdc = 24.0
+let oracle_ts = 0.0001
+let oracle_alpha = 5.196152422706632 // 6·cos(π/6)
+let oracle_beta = 3.0 // 6·sin(π/6)
+
+test "action_times: hand-computed absolute baseline at theta=pi/6, Vref=6" {
+  assert_eq(@svpwm.sector_of(oracle_alpha, oracle_beta), 1)
+  let (t1, t2) = @svpwm.action_times(oracle_alpha, oracle_beta, 1, oracle_ts, oracle_vdc)
+  // 手算值：√3·1e-4/24·6·0.5 = 2.1650635094611e-5 s
+  assert_true(approx_equal(t1, 0.000021650635094611, 0.000000000001))
+  assert_true(approx_equal(t2, 0.000021650635094611, 0.000000000001))
+}
+
+test "duties: hand-computed absolute baseline at theta=pi/6, Vref=6" {
+  let (da, db, dc) = @svpwm.duties(oracle_alpha, oracle_beta, oracle_ts, oracle_vdc)
+  // 扇区 1：db 居中为 0；da=√3·Vref/Vdc=√3/4，dc=-da
+  assert_true(approx_equal(da, 0.4330127018922193, 0.000000001))
+  assert_true(approx_equal(db, 0.0, 0.000000001))
+  assert_true(approx_equal(dc, -0.4330127018922193, 0.000000001))
+}
