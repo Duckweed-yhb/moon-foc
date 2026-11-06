@@ -5,13 +5,17 @@ PMSM SVPWM modulation and coordinate transform numerical kernel in MoonBit.
 Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping) plus Clarke /
 Park / inverse-Park transforms and mechanical-to-electrical angle conversion.
-No C FFI, no I/O — runs on wasm / wasm-gc / js / native.
+No C FFI, no I/O. Backend coverage as verified locally with MoonBit
+0.1.20261012: native and js build, run the demo, and pass the unit tests;
+wasm-gc passes check/build/test locally and in CI; legacy wasm tests were not
+run, because the local core.core bundle is missing (a toolchain environment
+issue, not a code failure), so a four-backend test matrix is not claimed.
 
 ## Install
 
-```
-moon add Duckweed/moon-foc
-```
+Not published to mooncakes yet. `moon add Duckweed/moon-foc` only works after a
+release; until then, run the bundled demo in this repository instead of
+installing the package.
 
 ## Quick start
 
@@ -23,10 +27,13 @@ let sector = @svpwm.sector_of(alpha, beta)            // → 1
 let (da, db, dc) = @svpwm.duties(alpha, beta, 0.0001, 24.0)  // Vdc=24V, Ts=100us
 ```
 
-Run the bundled demo:
+Run the bundled demo with an explicit target (the bare default target wasm cannot
+run locally because its core bundle is missing):
 
 ```
-moon run examples/demo
+moon run examples/demo --target native
+# equivalent runnable target:
+moon run examples/demo --target js
 ```
 
 Conventions:
@@ -39,14 +46,27 @@ Conventions:
 
 ## Test
 
+CI (`.github/workflows/ci.yml`) covers wasm-gc only: `moon check --target
+wasm-gc`, `moon build --target wasm-gc`, and `moon test --target wasm-gc`; there
+is no native, js, or legacy-wasm CI job. Native and js were checked and tested
+locally; legacy wasm tests were not run (missing local core.core bundle,
+environment issue).
+
 ```
-moon check --target wasm-gc
+moon check --deny-warn --target wasm-gc
 moon test --target wasm-gc
+# local additional targets, not part of CI:
+moon check --deny-warn --target native
+moon test --target native
+moon check --deny-warn --target js
+moon test --target js
 ```
 
-23 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
-θ=π/2, Park/inverse-Park round-trip, SVPWM sector at three angles, linear and
-overmodulation timing, duty range, and angle normalization.
+31 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
+sectors, linear and overmodulation timing, a hand-computed absolute baseline for
+T1/T2 and the three-phase duties in the linear region, duty range and per-sector
+order, and angle normalization.
 
 ## MATLAB differential reproduction
 
