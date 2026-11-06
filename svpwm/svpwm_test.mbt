@@ -62,3 +62,57 @@ test "duties: all within [-1, 1] range" {
   assert_true(db >= -1.0 && db <= 1.0)
   assert_true(dc >= -1.0 && dc <= 1.0)
 }
+
+// 补扇区 3/5/6 的精确判定点，覆盖第二象限、负 beta 轴与右下区域。
+test "sector: theta=3pi/4 (second quadrant) → sector 3" {
+  assert_eq(@svpwm.sector_of(-0.7, 0.7), 3)
+}
+
+test "sector: theta=3pi/2 (negative beta axis) → sector 5" {
+  assert_eq(@svpwm.sector_of(0.0, -1.0), 5)
+}
+
+test "sector: theta=11pi/6 (lower right) → sector 6" {
+  assert_eq(@svpwm.sector_of(0.8660254037844386, -0.5), 6)
+}
+
+// 线性区内逐扇区检查：相邻矢量作用时间非负且求和不超 Ts，
+// 七段式发波下最高/中/低相的占空比次序固定，扇区映射错位会被次序断言拦下。
+test "sector 3: linear timing non-negative, duty order db >= dc >= da" {
+  let vdc = 24.0
+  let ts = 0.0001
+  let (alpha, beta) = (-0.7, 0.7)
+  let sector = @svpwm.sector_of(alpha, beta)
+  let (t1, t2) = @svpwm.action_times(alpha, beta, sector, ts, vdc)
+  assert_true(t1 >= -eps && t2 >= -eps)
+  assert_true(t1 + t2 >= -eps)
+  assert_true(t1 + t2 <= ts + eps)
+  let (da, db, dc) = @svpwm.duties(alpha, beta, ts, vdc)
+  assert_true(db >= dc && dc >= da)
+}
+
+test "sector 5: linear timing non-negative, duty order dc >= da >= db" {
+  let vdc = 24.0
+  let ts = 0.0001
+  let (alpha, beta) = (0.0, -1.0)
+  let sector = @svpwm.sector_of(alpha, beta)
+  let (t1, t2) = @svpwm.action_times(alpha, beta, sector, ts, vdc)
+  assert_true(t1 >= -eps && t2 >= -eps)
+  assert_true(t1 + t2 >= -eps)
+  assert_true(t1 + t2 <= ts + eps)
+  let (da, db, dc) = @svpwm.duties(alpha, beta, ts, vdc)
+  assert_true(dc >= da && da >= db)
+}
+
+test "sector 6: linear timing non-negative, duty order da >= dc >= db" {
+  let vdc = 24.0
+  let ts = 0.0001
+  let (alpha, beta) = (0.8660254037844386, -0.5)
+  let sector = @svpwm.sector_of(alpha, beta)
+  let (t1, t2) = @svpwm.action_times(alpha, beta, sector, ts, vdc)
+  assert_true(t1 >= -eps && t2 >= -eps)
+  assert_true(t1 + t2 >= -eps)
+  assert_true(t1 + t2 <= ts + eps)
+  let (da, db, dc) = @svpwm.duties(alpha, beta, ts, vdc)
+  assert_true(da >= dc && dc >= db)
+}
