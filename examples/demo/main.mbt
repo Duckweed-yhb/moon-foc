@@ -15,7 +15,12 @@ fn main() -> Unit {
   let (d, q) = @coord.park(alpha, beta, theta)
   println("d=" + d.to_string() + " q=" + q.to_string())
 
-  // 用 alpha/beta 直接喂 SVPWM（典型 FOC 链路是 d/q → inv_park → alpha/beta → SVPWM）
+  // d/q 经 inv_park 还原同一 alpha/beta，演示 Park 逆变换
+  let (alpha2, beta2) = @coord.inv_park(d, q, theta)
+  println("inv_park: alpha=" + alpha2.to_string() + " beta=" + beta2.to_string())
+
+  // 最小示例直接用 Clarke 得到的 alpha/beta 喂 SVPWM；
+  // 实际电流环输出 d/q 时，先经 inv_park 还原 alpha/beta 再调制。
   let sector = @svpwm.sector_of(alpha, beta)
   println("sector=" + sector.to_string())
 
