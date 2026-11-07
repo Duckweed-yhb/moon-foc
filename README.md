@@ -62,26 +62,29 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-31 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+33 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
-order, and angle normalization.
+order, angle normalization, and 20 independent numeric fixtures whose expected
+values were computed outside this library.
 
-## MATLAB differential reproduction
+## Independent numeric fixtures
 
-Expected values are hand-computed from the textbook formulas (not derived from
-this library's own output). To reproduce independently:
+`coord/coord_test.mbt` and `svpwm/svpwm_test.mbt` each carry 20 fixed cases whose
+expected values were computed independently by `scripts/gen_fixtures.py` (plain
+Python, textbook formulas), not taken from this library's output. The script
+sweeps current amplitudes 1 / 5 / 10 / 20 A and Park angles from 0 to 1.9π, so a
+few cases land in the overmodulation region and pin the `T1+T2 = Ts` clamping.
 
-1. Pick 20 fixed inputs `(ia, ib, ic, θ)` (e.g. from the 32-pole-pair /
-   1250 Nm PMSM parameter set used in the eVTOL challenge project).
-2. Compute `(alpha, beta)` with the Clarke formula above, then `(d, q)` with
-   Park, then `(duty_a, duty_b, duty_c)` with SVPWM.
-3. Hard-code the results as assertions in `coord/coord_test.mbt` and
-   `svpwm/svpwm_test.mbt`.
+Regenerate the printed block if the formulas ever change:
 
-The MATLAB script and the Simulink reference model (same motor parameters) are
-maintained out-of-tree; this repository only carries the numeric fixtures.
+```
+python scripts/gen_fixtures.py
+```
+
+A MATLAB / Simulink reference model with the same motor parameters is maintained
+out-of-tree; the numeric fixtures in this repository are the in-tree oracle.
 
 ## License
 
