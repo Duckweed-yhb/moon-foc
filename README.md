@@ -13,9 +13,15 @@ issue, not a code failure), so a four-backend test matrix is not claimed.
 
 ## Install
 
-Not published to mooncakes yet. `moon add Duckweed/moon-foc` only works after a
-release; until then, run the bundled demo in this repository instead of
-installing the package.
+Published to mooncakes as `Duckweed/moon-foc@0.1.0` (Latest 0.1.0, MIT,
+published 2026-11-08):
+
+```
+moon add Duckweed/moon-foc@0.1.0
+```
+
+The bundled `examples/demo` can still be run directly from this repository
+without installing the package.
 
 ## Quick start
 
@@ -48,9 +54,12 @@ Conventions:
 
 CI (`.github/workflows/ci.yml`) covers wasm-gc only: `moon check --target
 wasm-gc`, `moon build --target wasm-gc`, and `moon test --target wasm-gc`; there
-is no native, js, or legacy-wasm CI job. Native and js were checked and tested
-locally; legacy wasm tests were not run (missing local core.core bundle,
-environment issue).
+is no native, js, or legacy-wasm CI job. Local verification on 2026-11-08:
+`moon test --target native`, `--target wasm-gc`, and `--target js` each report
+33 passed / 0 failed, and `moon check --deny-warn --target js` / `--target
+wasm-gc` exit cleanly. Legacy wasm tests were not run (missing local core.core
+bundle, a toolchain environment issue rather than a code failure); a
+four-backend test matrix is not claimed.
 
 ```
 moon check --deny-warn --target wasm-gc
