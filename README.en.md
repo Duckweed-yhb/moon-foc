@@ -15,11 +15,11 @@ issue, not a code failure), so a four-backend test matrix is not claimed.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.0` (Latest 0.1.0, MIT,
-published 2026-11-08):
+Published to mooncakes as `Duckweed/moon-foc@0.1.1` (Latest 0.1.1, MIT,
+published 2026-11-09):
 
 ```
-moon add Duckweed/moon-foc@0.1.0
+moon add Duckweed/moon-foc@0.1.1
 ```
 
 The bundled `examples/demo` can still be run directly from this repository
