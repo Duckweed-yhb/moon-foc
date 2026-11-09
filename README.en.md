@@ -1,0 +1,118 @@
+# moon-foc
+
+[中文](./README.md) · English
+
+PMSM SVPWM modulation and coordinate transform numerical kernel in MoonBit.
+
+Pure numerical core for field-oriented control: space-vector PWM (six-sector
+detection, T1/T2 active-vector timing, overmodulation clamping) plus Clarke /
+Park / inverse-Park transforms and mechanical-to-electrical angle conversion.
+No C FFI, no I/O. Backend coverage as verified locally with MoonBit
+0.1.20261012: native and js build, run the demo, and pass the unit tests;
+wasm-gc passes check/build/test locally and in CI; legacy wasm tests were not
+run, because the local core.core bundle is missing (a toolchain environment
+issue, not a code failure), so a four-backend test matrix is not claimed.
+
+## Install
+
+Published to mooncakes as `Duckweed/moon-foc@0.1.0` (Latest 0.1.0, MIT,
+published 2026-11-08):
+
+```
+moon add Duckweed/moon-foc@0.1.0
+```
+
+The bundled `examples/demo` can still be run directly from this repository
+without installing the package.
+
+## Quick start
+
+```moon
+// examples/demo/main.mbt
+let (alpha, beta) = @coord.clarke(1.0, -0.5, -0.5)   // → alpha=1, beta=0
+let (d, q) = @coord.park(alpha, beta, 0.7)            // rotate by theta=0.7 rad
+let sector = @svpwm.sector_of(alpha, beta)            // → 1
+let (da, db, dc) = @svpwm.duties(alpha, beta, 0.0001, 24.0)  // Vdc=24V, Ts=100us
+```
+
+Run the bundled demo with an explicit target (the bare default target wasm cannot
+run locally because its core bundle is missing):
+
+```
+moon run examples/demo --target native
+# equivalent runnable target:
+moon run examples/demo --target js
+```
+
+Conventions:
+
+- Amplitude-invariant Clarke: `alpha = (2/3)(ia - ib/2 - ic/2)`, `beta = (1/√3)(ib - ic)`.
+- Park: `d = alpha*cosθ + beta*sinθ`, `q = -alpha*sinθ + beta*cosθ`.
+- SVPWM duties are centered around 0 (range [-1, 1]); 0 means 50% on-time.
+- Linear modulation limit: `|Vref| <= Vdc/√3`. Beyond that, T1/T2 are scaled
+  so `T1+T2 = Ts`.
+
+## Test
+
+CI (`.github/workflows/ci.yml`) covers wasm-gc only: `moon check --target
+wasm-gc`, `moon build --target wasm-gc`, and `moon test --target wasm-gc`; there
+is no native, js, or legacy-wasm CI job. Local verification on 2026-11-08:
+`moon test --target native`, `--target wasm-gc`, and `--target js` each report
+33 passed / 0 failed, and `moon check --deny-warn --target js` / `--target
+wasm-gc` exit cleanly. Legacy wasm tests were not run (missing local core.core
+bundle, a toolchain environment issue rather than a code failure); a
+four-backend test matrix is not claimed.
+
+```
+moon check --deny-warn --target wasm-gc
+moon test --target wasm-gc
+# local additional targets, not part of CI:
+moon check --deny-warn --target native
+moon test --target native
+moon check --deny-warn --target js
+moon test --target js
+```
+
+33 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
+sectors, linear and overmodulation timing, a hand-computed absolute baseline for
+T1/T2 and the three-phase duties in the linear region, duty range and per-sector
+order, angle normalization, and 20 independent numeric fixtures whose expected
+values were computed outside this library.
+
+## Independent numeric fixtures
+
+`coord/coord_test.mbt` and `svpwm/svpwm_test.mbt` each carry 20 fixed cases whose
+expected values were computed independently by `scripts/gen_fixtures.py` (plain
+Python, textbook formulas), not taken from this library's output. The script
+sweeps current amplitudes 1 / 5 / 10 / 20 A and Park angles from 0 to 1.9π, so a
+few cases land in the overmodulation region and pin the `T1+T2 = Ts` clamping.
+
+Regenerate the printed block if the formulas ever change:
+
+```
+python scripts/gen_fixtures.py
+```
+
+A MATLAB / Simulink reference model with the same motor parameters is maintained
+out-of-tree; the numeric fixtures in this repository are the in-tree oracle.
+
+## License
+
+MIT © 2026 Duckweed-yhb
+
+## AI tool usage
+
+This project was built with AI assistance, but the goal, scope, quality boundaries, and
+open-source compliance are controlled by the author:
+
+- **AI assisted with**: boilerplate for Clarke / Park / SVPWM functions, test case generation,
+  initial README draft.
+- **Human controlled**: project selection (motor control numerical kernel), the pure-math
+  boundary (no I/O), the differentiation from `hwlxmm/dsp` (SVPWM chain vs instantaneous
+  power), the design of the 20 MATLAB baseline inputs, hand-computed expected values.
+- **How AI-generated code is verified**: each AI-generated test is checked against textbook
+  formulas; Clarke/Park round-trip tests verify mathematical consistency; SVPWM sector
+  detection uses 6 angle points; CI must be green before merge.
+- **What is not done**: no code copied from TI C2000 / ST MCSDK (only math steps cross-referenced);
+  no self-hosting expected values; no AI-generated test data taken as truth.
