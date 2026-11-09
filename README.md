@@ -8,10 +8,10 @@ MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.1`（Latest 0.1.1，MIT，2026-11-09 发布）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.2`（Latest 0.1.2，MIT，2026-11-09 发布）：
 
 ```
-moon add Duckweed/moon-foc@0.1.1
+moon add Duckweed/moon-foc@0.1.2
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。

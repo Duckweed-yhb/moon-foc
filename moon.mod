@@ -1,6 +1,6 @@
 name = "Duckweed/moon-foc"
 
-version = "0.1.1"
+version = "0.1.2"
 
 description = "PMSM SVPWM modulation and coordinate transform numerical kernel"
 
