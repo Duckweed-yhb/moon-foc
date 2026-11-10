@@ -6,6 +6,8 @@
 
 ### Changed
 
+- CI 从「只跑 wasm-gc」扩成矩阵：`wasm-gc` / `js` / `native` 三个目标各自 `check --deny-warn` + `build` + `test`，另加一个 job 用 `moon run examples/demo --target native` 把「可运行示例」变成 CI 事实。本包无 C FFI，三个目标行为应一致，逐个跑是让「跨后端可用」可验证而非声明。
+- README 测试口径订正：此前写「33 passed」，实际已是 36 个用例（0.1.3 加的极对数边界与负角度归一化）；同时删掉「native / js 不属于 CI」的旧说法。本机 2026-11-10 复跑 native 36/36、wasm-gc 36/36；js 因本机没有可用 node，测试交给 CI。
 - `examples/demo` 补极对数换算（机械角 0.1 rad × 32 极对 → 3.2 rad），覆盖 `angle/` 包；此前 demo 只用到 Clarke / Park / SVPWM。
 
 ## [0.1.3] - 2026-11-10

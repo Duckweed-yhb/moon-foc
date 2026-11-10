@@ -6,20 +6,47 @@ on:
   pull_request:
 
 jobs:
-  wasm-gc:
+  format:
+    name: format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install MoonBit toolchain
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
-      - name: Format check
+      - name: Setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+      - name: moon fmt --check
         run: moon fmt --check
 
-      - name: Check
-        run: moon check --target wasm-gc
+  build-and-test:
+    name: check & test (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 本包不使用 C FFI，三个目标的行为应当一致；逐个跑是为了让
+        # 「跨后端可用」成为构建期可验证的事实，而不是 README 里的一句声明。
+        target: [wasm-gc, js, native]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+
+      - name: Check (deny warnings)
+        run: moon check --target ${{ matrix.target }} --deny-warn
+
       - name: Build
-        run: moon build --target wasm-gc
+        run: moon build --target ${{ matrix.target }}
+
       - name: Test
-        run: moon test --target wasm-gc
+        run: moon test --target ${{ matrix.target }}
+
+  example:
+    name: run example (native)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+      # 验收第 6 条：至少一个可运行示例。示例必须能被 CI 真正跑起来，
+      # 不能只在 README 里写着「可以运行」。
+      - name: Run examples/demo
+        run: moon run examples/demo --target native
