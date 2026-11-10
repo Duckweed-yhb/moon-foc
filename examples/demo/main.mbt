@@ -35,4 +35,12 @@ fn main {
     " dc=" +
     dc.to_string(),
   )
+
+  // 机械角度 × 极对数 → 电角度（32 极对 / 1250 N·m 电机参数）
+  let theta_e = @angle.mechanical_to_electrical(0.1, 32)
+  println(
+    "angle: mechanical 0.1 rad × 32 pole pairs → electrical=" +
+    theta_e.to_string() +
+    " rad",
+  )
 }
