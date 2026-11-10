@@ -394,6 +394,29 @@ pub fn switching_sequence(
 }
 
 ///|
+/// 从 alpha/beta 直接得到七段式开关序列：内部依次算扇区、作用时间、序列。
+///
+/// 手工三步（`sector_of` → `action_times` → `switching_sequence`）最容易错在
+/// 把扇区传错，或者忘了先做输入校验。这个入口把它们串起来，输入不合法
+/// （非有限值、ts/vdc 非正）时返回空数组而不是一个看似正常的序列。
+///
+/// 行为与手工三步完全一致：内部就是那三个函数。
+pub fn switching_sequence_of(
+  alpha : Double,
+  beta : Double,
+  ts : Double,
+  vdc : Double,
+) -> Array[(Int32, Double)] {
+  match check_inputs(alpha, beta, ts, vdc) {
+    Err(_) => return []
+    Ok(_) => ()
+  }
+  let sector = sector_of(alpha, beta)
+  let (t1, t2) = action_times(alpha, beta, sector, ts, vdc)
+  switching_sequence(sector, t1, t2, ts)
+}
+
+///|
 /// 开关序列里某一相的高电平总时间（秒）。把 `switching_sequence` 与
 /// `duties` 对起来用：`on_time(c, ts, seq) == (duty_c + 1) / 2 * ts`。
 pub fn on_time_of_phase(seq : Array[(Int32, Double)], phase : Int32) -> Double {

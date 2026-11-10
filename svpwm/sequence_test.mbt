@@ -135,3 +135,61 @@ test "a zero length active vector is dropped too" {
   }
   assert_true(seq_near(total, ts))
 }
+
+///|
+/// 组合入口与手工三步必须逐位一致。
+test "switching_sequence_of matches the manual composition" {
+  let vdc = 24.0
+  let ts = 0.0001
+  let mag = 0.95 * vdc / 3.0.sqrt() // 线性区
+  let mut i = 0
+  while i < 24 {
+    let theta = (i.to_double() + 0.5) * 2.0 * 3.141592653589793 / 24.0
+    let alpha = mag * @math.cos(theta)
+    let beta = mag * @math.sin(theta)
+    // 手工三步
+    let sector = @svpwm.sector_of(alpha, beta)
+    let (t1, t2) = @svpwm.action_times(alpha, beta, sector, ts, vdc)
+    let manual = @svpwm.switching_sequence(sector, t1, t2, ts)
+    // 组合入口
+    let combined = @svpwm.switching_sequence_of(alpha, beta, ts, vdc)
+    assert_eq(manual.length(), combined.length())
+    let mut k = 0
+    while k < manual.length() {
+      let (ms, md) = manual[k]
+      let (cs, cd) = combined[k]
+      assert_eq(ms, cs)
+      assert_true(seq_near(md, cd))
+      k += 1
+    }
+    i += 1
+  }
+}
+
+///|
+/// 非法输入返回空数组：不会给出一个「看起来正常」的序列。
+test "switching_sequence_of rejects invalid inputs" {
+  let nan = 0.0 / 0.0
+  assert_eq(@svpwm.switching_sequence_of(nan, 0.0, 0.0001, 24.0).length(), 0)
+  assert_eq(@svpwm.switching_sequence_of(1.0, 0.0, 0.0, 24.0).length(), 0)
+  assert_eq(@svpwm.switching_sequence_of(1.0, 0.0, 0.0001, 0.0).length(), 0)
+  // 合法输入给出 7 段（线性区内零矢量时间不为零）
+  assert_eq(@svpwm.switching_sequence_of(1.0, 0.5, 0.0001, 24.0).length(), 7)
+}
+
+///|
+/// 过调制输入：组合入口同样钳位，序列总时长等于 Ts。
+test "switching_sequence_of clamps in over modulation" {
+  let vdc = 24.0
+  let ts = 0.0001
+  let mag = 2.0 * vdc / 3.0.sqrt()
+  let seq = @svpwm.switching_sequence_of(mag, 0.0, ts, vdc)
+  assert_true(seq.length() > 0)
+  let mut total = 0.0
+  for item in seq {
+    let (_, dur) = item
+    assert_true(dur > 0.0)
+    total = total + dur
+  }
+  assert_true(seq_near(total, ts))
+}
