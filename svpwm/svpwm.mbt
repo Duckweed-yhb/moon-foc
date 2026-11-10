@@ -36,6 +36,13 @@ pub fn action_times(
   ts : Double,
   vdc : Double,
 ) -> (Double, Double) {
+  // 扇区只接受 1..6。传 0 或 7 时旧实现照样往下算：sector_start 变成 −π/3 或 2π，
+  // 局部角落到 [0, π/3) 之外，T1/T2 会出现负值——控制环拿到负作用时间不会报错，
+  // 只会静默输出错的占空比。这里直接返回零作用时间（等价于零矢量），
+  // 需要区分「零矢量」与「参数非法」时用 sector_of 自行校验。
+  if sector < 1 || sector > 6 {
+    return (0.0, 0.0)
+  }
   if vdc <= 0.0 || ts <= 0.0 {
     return (0.0, 0.0)
   }
@@ -214,6 +221,9 @@ pub fn line_voltages(
 /// 与 `duties(alpha, beta, ts, vdc)` 是同一件事的两条路径：七段式 SVPWM 的
 /// 波形等于「正弦调制 + 中点平移」。一致性由测试锁住，任一路径改动后
 /// 另一条会立刻暴露差异——这比拿一张手算表核对更可靠。
+///
+/// 前提：`va/vb/vc` 必须是有限值。NaN 输入会原样穿过钳位（NaN 的比较恒为
+/// false），需要入口校验时先用 `check_inputs`。
 pub fn duties_from_voltages(
   va : Double,
   vb : Double,
@@ -267,8 +277,10 @@ pub fn dead_time_compensation(
   td : Double,
   ts : Double,
 ) -> (Double, Double, Double) {
+  // 无死区 / 非法周期：原样返回，但仍然钳位——调用方不该因为「这次没补偿」
+  // 就拿到越界占空比。
   if ts <= 0.0 || td <= 0.0 {
-    return (da, db, dc)
+    return (clamp_duty(da), clamp_duty(db), clamp_duty(dc))
   }
   let delta = td / ts
   (

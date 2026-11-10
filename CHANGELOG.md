@@ -2,6 +2,17 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [0.1.7] - 2026-11-11
+
+### Fixed
+
+- `svpwm/action_times` 扇区越界不再静默算出负作用时间：传 0 或 7 时局部角会落到 `[0, π/3)` 之外，T1/T2 变负而调用方无感。现在扇区不在 1..6 时返回 `(0, 0)`，与「零矢量」同值，需要区分时用 `sector_of` 自行校验。
+- `svpwm/dead_time_compensation` 跳过补偿的分支也做钳位：此前 `td<=0` 或 `ts<=0` 时原样返回，越界占空比会漏到下游。
+
+### Changed
+
+- 文档补充输入前提：`duties_from_voltages` 要求输入有限（NaN 会穿过钳位，因为 NaN 比较恒为 false），需要入口校验时用 `check_inputs`。
+- 测试数 54 → 56。
 ## [0.1.6] - 2026-11-10
 
 ### Added

@@ -113,3 +113,28 @@ test "line voltages sum to zero and match phase differences" {
   assert_eq(z2, 0.0)
   assert_eq(z3, 0.0)
 }
+
+///|
+test "action_times rejects out of range sector instead of returning negative times" {
+  // 传 0 或 7 时旧实现会让局部角落到 [0, π/3) 之外，T1/T2 变负。
+  for bad in [0, 7, -1] {
+    let (t1, t2) = @svpwm.action_times(5.0, 2.0, bad, 0.0001, 24.0)
+    assert_eq(t1, 0.0)
+    assert_eq(t2, 0.0)
+  }
+  // 合法扇区照常工作。
+  let (t1, t2) = @svpwm.action_times(5.0, 2.0, 1, 0.0001, 24.0)
+  assert_true(t1 >= 0.0)
+  assert_true(t2 >= 0.0)
+}
+
+///|
+test "dead time compensation clamps even when it is skipped" {
+  // 没有死区 / 非法周期时不补偿，但越界占空比仍要被钳住。
+  let (a, b, c) = @svpwm.dead_time_compensation(
+    1.3, -1.3, 0.5, 1.0, -1.0, 0.0, 0.0, 0.0001,
+  )
+  assert_eq(a, 1.0)
+  assert_eq(b, -1.0)
+  assert_eq(c, 0.5)
+}
