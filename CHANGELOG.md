@@ -2,6 +2,15 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [0.1.5] - 2026-11-10
+
+### Added
+
+- `angle/electrical_to_mechanical`：电角度 → 机械角度（周期意义下的逆，输出落在 `[0, 2π/p)`，往返后电角度不变）；`pole_pairs <= 0` 返回 0。
+- `svpwm/modulation_index` 与 `is_overmodulated`：调制比 m = |Vref|/(Vdc/√3) 与是否削顶。此前钳位只保证 T1+T2=Ts，调用方无从判断「已经进入过调制」。
+- `svpwm/phase_voltages` 与 `line_voltages`：占空比 → 相电压 / 线电压，供观测器与反电势估算使用；线电压三者之和恒为 0。
+- 6 条不变量测试：全圆 360 点占空比落在 [-1,1]、过调制区 T1+T2 ≤ Ts、扇区边界占空比连续、调制比边界 m=1、线电压和为零、电角度往返。
+
 ## [0.1.4] - 2026-11-10
 
 ### Added

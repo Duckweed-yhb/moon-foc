@@ -156,3 +156,54 @@ pub fn duties_checked(
     Ok(_) => Ok(duties(alpha, beta, ts, vdc))
   }
 }
+
+///|
+/// 调制比 m = |Vref| / (Vdc/√3)：线性区边界处 m = 1，m > 1 即进入过调制区。
+///
+/// 与 `action_times` 里的钳位配套使用：钳位只保证 T1+T2=Ts，不告诉调用方
+/// 「已经削顶了」。需要报警或降额时用这个判断，别去反推 T1/T2。
+pub fn modulation_index(alpha : Double, beta : Double, vdc : Double) -> Double {
+  if vdc <= 0.0 {
+    return 0.0
+  }
+  let vref = (alpha * alpha + beta * beta).sqrt()
+  vref / (vdc / 3.0.sqrt())
+}
+
+///|
+/// 参考矢量是否已进入过调制区（m > 1）。
+///
+/// 只看幅值，与扇区无关：六边形内切圆半径就是 Vdc/√3，超过即削顶。
+pub fn is_overmodulated(alpha : Double, beta : Double, vdc : Double) -> Bool {
+  modulation_index(alpha, beta, vdc) > 1.0
+}
+
+///|
+/// 占空比 → 相电压（伏特，相对直流母线中点）。占空比以 0 为中心，
+/// 因此 `v = duty · Vdc / 2`。
+///
+/// 供观测器、反电势估算这类下游环节使用：它们要的是电压，不是占空比。
+pub fn phase_voltages(
+  da : Double,
+  db : Double,
+  dc : Double,
+  vdc : Double,
+) -> (Double, Double, Double) {
+  let half = vdc / 2.0
+  (da * half, db * half, dc * half)
+}
+
+///|
+/// 占空比 → 线电压 (vab, vbc, vca)，单位伏特。
+///
+/// 三相对称时三者之和恒为 0（等于零序分量的一次差分），这条恒等式是
+/// 相电压到线电压换算的正确性判据，测试里用它做断言。
+pub fn line_voltages(
+  da : Double,
+  db : Double,
+  dc : Double,
+  vdc : Double,
+) -> (Double, Double, Double) {
+  let (va, vb, vc) = phase_voltages(da, db, dc, vdc)
+  (va - vb, vb - vc, vc - va)
+}
