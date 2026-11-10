@@ -372,13 +372,24 @@ pub fn switching_sequence(
   let vk1 = states[(k + 1) % 6]
   let t0 = ts - t1c - t2c
   let quarter = t0 / 4.0
-  out.push((0x00, quarter))
-  out.push((vk, t1c / 2.0))
-  out.push((vk1, t2c / 2.0))
-  out.push((0x07, t0 / 2.0))
-  out.push((vk1, t2c / 2.0))
-  out.push((vk, t1c / 2.0))
-  out.push((0x00, quarter))
+  let raw : Array[(Int32, Double)] = [
+    (0x00, quarter),
+    (vk, t1c / 2.0),
+    (vk1, t2c / 2.0),
+    (0x07, t0 / 2.0),
+    (vk1, t2c / 2.0),
+    (vk, t1c / 2.0),
+    (0x00, quarter),
+  ]
+  // 丢掉零时长段：过调制边界（t0=0）或扇区边界（t1/t2=0）时，
+  // 七段式会退化。留着零长度段等于让 MCU 去写一个零脉冲——
+  // 多数定时器能忍，但没必要，而且让「序列长度」失去意义。
+  for item in raw {
+    let (state, dur) = item
+    if dur > 0.0 {
+      out.push((state, dur))
+    }
+  }
   out
 }
 

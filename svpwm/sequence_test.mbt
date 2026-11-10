@@ -23,11 +23,12 @@ test "sequence durations sum to the switching period" {
     let sector = @svpwm.sector_of(alpha, beta)
     let (t1, t2) = @svpwm.action_times(alpha, beta, sector, ts, vdc)
     let seq = @svpwm.switching_sequence(sector, t1, t2, ts)
-    assert_eq(seq.length(), 7)
+    // 零时长段会被丢掉：扇区边界上 t1 或 t2 为 0 时少于七段，但至少三段。
+    assert_true(seq.length() >= 3 && seq.length() <= 7)
     let mut total = 0.0
     for item in seq {
       let (_, dur) = item
-      assert_true(dur >= -1.0e-18)
+      assert_true(dur > 0.0)
       total = total + dur
     }
     assert_true(seq_near(total, ts))
@@ -88,4 +89,49 @@ test "invalid sector or overlong times yield an empty sequence" {
   assert_eq(@svpwm.switching_sequence(7, 1.0e-5, 1.0e-5, 1.0e-4).length(), 0)
   // t1+t2 超过 ts：先 action_times 钳位，这里直接拒绝
   assert_eq(@svpwm.switching_sequence(1, 8.0e-5, 8.0e-5, 1.0e-4).length(), 0)
+}
+
+///|
+/// 过调制边界（t0 = 0）：零矢量没有时间，序列应退化成 3 段而不是 7 段。
+test "zero vector segments disappear at the over modulation boundary" {
+  let ts = 0.0001
+  let seq = @svpwm.switching_sequence(1, 6.0e-5, 4.0e-5, ts) // t1+t2 == ts
+  // 两个零矢量段被丢掉，剩 V1、V2、V2、V1 四段（中间两个 V2 各自是 t2/2）
+  assert_eq(seq.length(), 4)
+  let (s0, d0) = seq[0]
+  let (s1, d1) = seq[1]
+  let (s2, d2) = seq[2]
+  let (s3, d3) = seq[3]
+  assert_eq(s0, 0x04) // V1
+  assert_eq(s1, 0x06) // V2
+  assert_eq(s2, 0x06) // V2
+  assert_eq(s3, 0x04) // 回到 V1
+  assert_true(seq_near(d0, 3.0e-5))
+  assert_true(seq_near(d1, 2.0e-5))
+  assert_true(seq_near(d2, 2.0e-5))
+  assert_true(seq_near(d3, 3.0e-5))
+  assert_true(seq_near(d0 + d1 + d2 + d3, ts))
+  // 每段都非零：下游不该拿到零长度脉冲
+  for item in seq {
+    let (_, dur) = item
+    assert_true(dur > 0.0)
+  }
+}
+
+///|
+/// 扇区边界上一个矢量为零时间：对应段被丢掉，剩 5 段。
+test "a zero length active vector is dropped too" {
+  let ts = 0.0001
+  let seq = @svpwm.switching_sequence(2, 0.0, 5.0e-5, ts)
+  assert_eq(seq.length(), 5)
+  for item in seq {
+    let (_, dur) = item
+    assert_true(dur > 0.0)
+  }
+  let mut total = 0.0
+  for item in seq {
+    let (_, dur) = item
+    total = total + dur
+  }
+  assert_true(seq_near(total, ts))
 }
