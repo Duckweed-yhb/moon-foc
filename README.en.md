@@ -58,7 +58,7 @@ CI (`.github/workflows/ci.yml`) covers wasm-gc only: `moon check --target
 wasm-gc`, `moon build --target wasm-gc`, and `moon test --target wasm-gc`; there
 is no native, js, or legacy-wasm CI job. Local verification on 2026-11-08:
 `moon test --target native`, `--target wasm-gc`, and `--target js` each report
-33 passed / 0 failed, and `moon check --deny-warn --target js` / `--target
+36 passed / 0 failed, and `moon check --deny-warn --target js` / `--target
 wasm-gc` exit cleanly. Legacy wasm tests were not run (missing local core.core
 bundle, a toolchain environment issue rather than a code failure); a
 four-backend test matrix is not claimed.
@@ -73,7 +73,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-33 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+36 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector

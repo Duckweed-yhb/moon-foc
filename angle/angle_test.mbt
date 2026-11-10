@@ -61,3 +61,27 @@ test "mech_to_elec: pi/2 mech × 2 poles = pi elec" {
 test "mech_to_elec: pi mech × 2 poles = 2pi → 0" {
   assert_true(approx_equal(@angle.mechanical_to_electrical(pi, 2), 0.0, eps))
 }
+
+///|
+test "normalize: -3pi/2 wraps to pi/2" {
+  assert_true(
+    approx_equal(@angle.normalize_angle(-3.0 * pi / 2.0), pi / 2.0, eps),
+  )
+}
+
+///|
+test "mech_to_elec: negative mechanical angle normalizes" {
+  // -pi/4 × 2 = -pi/2 → 3pi/2
+  assert_true(
+    approx_equal(
+      @angle.mechanical_to_electrical(-pi / 4.0, 2),
+      3.0 * pi / 2.0,
+      eps,
+    ),
+  )
+}
+
+///|
+test "mech_to_elec: zero pole pairs yields zero" {
+  assert_true(approx_equal(@angle.mechanical_to_electrical(1.234, 0), 0.0, eps))
+}
