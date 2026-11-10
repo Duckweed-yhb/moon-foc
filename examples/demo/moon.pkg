@@ -8,4 +8,5 @@ import {
   "Duckweed/moon-foc/angle",
   "Duckweed/moon-foc/coord",
   "Duckweed/moon-foc/svpwm",
+  "Duckweed/moon-foc/pi",
 }

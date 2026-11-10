@@ -43,4 +43,32 @@ fn main {
     theta_e.to_string() +
     " rad",
   )
+  // 电流环 PI：0.1 A 阶跃误差下看输出怎么涨、顶到限幅后积分器不再累积。
+  let iq_pi = @pi.Pi::new(0.5, 200.0, 0.0001, -12.0, 12.0)
+  let out1 = iq_pi.step(0.1)
+  let out2 = iq_pi.step(0.1)
+  let out3 = iq_pi.step(0.1)
+  println(
+    "pi: step 0.1 A → " +
+    out1.to_string() +
+    ", " +
+    out2.to_string() +
+    ", " +
+    out3.to_string() +
+    " (V), integral=" +
+    iq_pi.integral().to_string(),
+  )
+  // 大误差会把输出顶到限幅；再同向推 100 步，积分器应被冻住。
+  let mut k = 0
+  while k < 100 {
+    let _ = iq_pi.step(100.0)
+    k += 1
+  }
+  println(
+    "pi: saturated at " +
+    iq_pi.step(100.0).to_string() +
+    " V, integral=" +
+    iq_pi.integral().to_string() +
+    " (anti-windup holds it at the limit)",
+  )
 }

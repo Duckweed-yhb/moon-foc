@@ -88,3 +88,11 @@ test "zero dt degrades to proportional" {
   assert_true(near(pi.step(1.0), 2.0))
   assert_true(near(pi.integral(), 0.0))
 }
+
+///|
+test "reversed output limits are normalised" {
+  // 限幅区间写反（min > max）时交换，输出仍然是「夹在 [−1, 1] 里」。
+  let pi = @pi.Pi::new(10.0, 0.0, 0.001, 1.0, -1.0)
+  assert_true(near(pi.step(1.0), 1.0))
+  assert_true(near(pi.step(-1.0), -1.0))
+}

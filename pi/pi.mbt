@@ -24,7 +24,11 @@ pub struct Pi {
 }
 
 ///|
-/// 构造调节器。`dt <= 0` 时按 0 处理（退化成纯 P），避免除零式语义混乱。
+/// 构造调节器。
+///
+/// - `dt <= 0` 按 0 处理（退化成纯 P），避免除零式语义混乱；
+/// - `out_min > out_max` 时内部交换：限幅区间写反了不该产出一个上下颠倒的
+///   输出，交换后的语义才是调用方想要的。
 pub fn Pi::new(
   kp : Double,
   ki : Double,
@@ -33,7 +37,9 @@ pub fn Pi::new(
   out_max : Double,
 ) -> Pi {
   let step_time = if dt > 0.0 { dt } else { 0.0 }
-  { kp, ki, dt: step_time, out_min, out_max, integ: 0.0, }
+  let lo = if out_min <= out_max { out_min } else { out_max }
+  let hi = if out_min <= out_max { out_max } else { out_min }
+  { kp, ki, dt: step_time, out_min: lo, out_max: hi, integ: 0.0, }
 }
 
 ///|
