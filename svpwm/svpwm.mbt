@@ -330,3 +330,74 @@ fn clamp_duty(d : Double) -> Double {
     d
   }
 }
+
+///|
+/// 七段式开关序列：一个开关周期内按时间排好的 (开关状态, 持续时间)。
+///
+/// 开关状态是 3 位编码（bit2=a 相上桥、bit1=b、bit0=c，1 = 上桥导通）：
+/// 000 零矢量、111 七矢量、100/110/010/011/001/101 是六个基本矢量。
+///
+/// 序列（对称七段式）：0 → Vk → Vk+1 → 7 → Vk+1 → Vk → 0，
+/// 时间依次为 t0/4、t1/2、t2/2、t0/2、t2/2、t1/2、t0/4，其中 t0 = ts−t1−t2。
+///
+/// 这是 `duties` 的另一半：占空比告诉 MCU「每相导通用多少时间」，这个函数
+/// 告诉它「按什么顺序切」。两者必须自洽——测试里用「各相高电平时间之和
+/// 等于占空比」把两条路径钉在一起。
+///
+/// 扇区非法或 t1+t2 > ts 时返回空数组（调用方应先用 `action_times`）。
+///
+/// 每项是 tuple（MoonBit 的 tuple 不能直接当返回类型别名），返回
+/// `Array[(Int32, Double)]`：(state, duration)，duration 与 `ts` 同单位。
+pub fn switching_sequence(
+  sector : Int32,
+  t1 : Double,
+  t2 : Double,
+  ts : Double,
+) -> Array[(Int32, Double)] {
+  let out : Array[(Int32, Double)] = []
+  if sector < 1 || sector > 6 || ts <= 0.0 {
+    return out
+  }
+  // 扇区边界上 sin 的浮点残差会让 t1/t2 出现 −1e−17 量级的负数；
+  // 夹到 0 再判总时长，别把正常输入当非法。
+  let t1c = if t1 < 0.0 { 0.0 } else { t1 }
+  let t2c = if t2 < 0.0 { 0.0 } else { t2 }
+  if t1c + t2c > ts + 1.0e-18 {
+    return out
+  }
+  // 六个基本矢量的三相开关状态（a b c）。
+  let states = [0x04, 0x06, 0x02, 0x03, 0x01, 0x05]
+  let k = sector - 1
+  let vk = states[k]
+  let vk1 = states[(k + 1) % 6]
+  let t0 = ts - t1c - t2c
+  let quarter = t0 / 4.0
+  out.push((0x00, quarter))
+  out.push((vk, t1c / 2.0))
+  out.push((vk1, t2c / 2.0))
+  out.push((0x07, t0 / 2.0))
+  out.push((vk1, t2c / 2.0))
+  out.push((vk, t1c / 2.0))
+  out.push((0x00, quarter))
+  out
+}
+
+///|
+/// 开关序列里某一相的高电平总时间（秒）。把 `switching_sequence` 与
+/// `duties` 对起来用：`on_time(c, ts, seq) == (duty_c + 1) / 2 * ts`。
+pub fn on_time_of_phase(seq : Array[(Int32, Double)], phase : Int32) -> Double {
+  let shift = match phase {
+    0 => 2
+    1 => 1
+    _ => 0
+  }
+  let mut sum = 0.0
+  for item in seq {
+    let (state, dur) = item
+    let bit = (state >> shift) & 0x01
+    if bit == 0x01 {
+      sum = sum + dur
+    }
+  }
+  sum
+}

@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-11-11
+
+### Added
+
+- `svpwm/switching_sequence`：七段式开关序列（0→Vk→Vk+1→7→Vk+1→Vk→0），返回 `(开关状态, 持续时间)`；`on_time_of_phase` 把序列折回每相高电平时间。占空比告诉 MCU「每相导通多久」，序列告诉它「按什么顺序切」，测试用「序列折算的高电平时间 == (duty+1)/2·ts」把两条路径钉在一起。
+- 4 条测试：全圆 72 点序列时长之和 == ts、逐相与占空比一致、序列对称且首尾为零矢量、非法扇区/超时返回空。
+
+### Changed
+
+- 测试数 66 → 70。
+
 ### Added
 
 - `scripts/check-release.ps1` + CI 的 `release-meta` job：校验 `moon.mod` 的 version、CHANGELOG 最新版本段标题、README 里所有 `<模块>@x.y.z` 与 `Latest x.y.z` 三处一致，并拒绝重复的版本段。发布时漏改任何一处都不会报错，只会让文档慢慢变成谎话；现在它们对不上就红。
