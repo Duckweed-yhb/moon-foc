@@ -16,7 +16,7 @@ issue, not a code failure), so a four-backend test matrix is not claimed.
 ## Install
 
 Published to mooncakes as `Duckweed/moon-foc@0.1.3` (Latest 0.1.3, MIT,
-published 2026-11-09):
+published 2026-11-10):
 
 ```
 moon add Duckweed/moon-foc@0.1.3
