@@ -207,3 +207,97 @@ pub fn line_voltages(
   let (va, vb, vc) = phase_voltages(da, db, dc, vdc)
   (va - vb, vb - vc, vc - va)
 }
+
+///|
+/// 载波法 SVPWM：三相参考电压 → 占空比（零序注入取 (vmax+vmin)/2）。
+///
+/// 与 `duties(alpha, beta, ts, vdc)` 是同一件事的两条路径：七段式 SVPWM 的
+/// 波形等于「正弦调制 + 中点平移」。一致性由测试锁住，任一路径改动后
+/// 另一条会立刻暴露差异——这比拿一张手算表核对更可靠。
+pub fn duties_from_voltages(
+  va : Double,
+  vb : Double,
+  vc : Double,
+  vdc : Double,
+) -> (Double, Double, Double) {
+  if vdc <= 0.0 {
+    return (0.0, 0.0, 0.0)
+  }
+  let mut vmax = va
+  let mut vmin = va
+  if vb > vmax {
+    vmax = vb
+  }
+  if vc > vmax {
+    vmax = vc
+  }
+  if vb < vmin {
+    vmin = vb
+  }
+  if vc < vmin {
+    vmin = vc
+  }
+  // 零序注入：把三相参考的中点移到母线电压中点。
+  let offset = -(vmax + vmin) / 2.0
+  let half = vdc / 2.0
+  // 载波法在 m > 2/√3 时占空比会越过 ±1，这里饱和而不是外推：
+  // 下游拿到越界占空比只会写进比较寄存器，故障点离这里太远。
+  (
+    clamp_duty((va + offset) / half),
+    clamp_duty((vb + offset) / half),
+    clamp_duty((vc + offset) / half),
+  )
+}
+
+///|
+/// 死区补偿：按电流方向修正占空比。
+///
+/// 互补 PWM 的死区会让实际输出电压向电流方向「少」，补偿量为
+/// `sign(i_p) · (td / ts)`。返回补偿后的占空比，并钳位到 [-1, 1]。
+///
+/// 约定：`td` 与 `ts` 同单位（秒），`td/ts` 应远小于 1；`ts <= 0` 时原样返回。
+/// `ia/ib/ic` 用 A（符号即可），零电流不补偿。
+pub fn dead_time_compensation(
+  da : Double,
+  db : Double,
+  dc : Double,
+  ia : Double,
+  ib : Double,
+  ic : Double,
+  td : Double,
+  ts : Double,
+) -> (Double, Double, Double) {
+  if ts <= 0.0 || td <= 0.0 {
+    return (da, db, dc)
+  }
+  let delta = td / ts
+  (
+    clamp_duty(da + sign_of(ia) * delta),
+    clamp_duty(db + sign_of(ib) * delta),
+    clamp_duty(dc + sign_of(ic) * delta),
+  )
+}
+
+///|
+/// 电流符号：正 1 / 负 −1 / 零 0。
+fn sign_of(i : Double) -> Double {
+  if i > 0.0 {
+    1.0
+  } else if i < 0.0 {
+    -1.0
+  } else {
+    0.0
+  }
+}
+
+///|
+/// 占空比钳位到 [-1, 1]。
+fn clamp_duty(d : Double) -> Double {
+  if d > 1.0 {
+    1.0
+  } else if d < -1.0 {
+    -1.0
+  } else {
+    d
+  }
+}

@@ -2,6 +2,13 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [0.1.6] - 2026-11-10
+
+### Added
+
+- `svpwm/duties_from_voltages`：载波法 SVPWM（零序注入 `(vmax+vmin)/2`），与空间矢量路径 `duties(α, β)` 在 `m ≤ 1.1547` 内数值一致（实测 72 个角度点最大偏差 1e-15），过调制区饱和到 ±1。
+- `svpwm/dead_time_compensation`：按电流方向补偿死区，`sign(i)·td/ts`，钳位到 ±1；三相同号时是共模偏移，线电压不变。
+- 7 条测试：两条调制路径的等价性（线性区内 72 点、过调制区饱和、零序注入中点对称）、死区补偿符号约定、缺省不补偿、钳位、共模不改变线电压。
 ## [0.1.5] - 2026-11-10
 
 ### Added
