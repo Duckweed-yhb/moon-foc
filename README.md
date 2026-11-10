@@ -67,17 +67,19 @@ moon test --target js
 python scripts/gen_fixtures.py
 ```
 
-同电机参数的 MATLAB / Simulink 参考模型维护在仓库之外；本仓库内的数值夹具才是入库基准。
+数值夹具由 `scripts/gen_fixtures.py` 生成，不依赖 MATLAB 即可复现；同参数的 MATLAB / Simulink 模型可选，不在本仓库内。
 
 ## 许可证
 
 MIT © 2026 Duckweed-yhb
+
+来源、第三方参考、测试数据与 AI 使用范围见 [`PROVENANCE.md`](PROVENANCE.md)。
 
 ## AI 工具使用说明
 
 本项目在 AI 协助下建成，但选题、范围、质量边界与开源合规由作者把控：
 
 - **AI 协助部分**：Clarke / Park / SVPWM 函数样板、测试用例生成、README 初稿。
-- **人工把控部分**：选题（电机控制数值内核）、纯数学边界（不做 I/O）、与 `hwlxmm/dsp` 的区分（SVPWM 调制链 vs 瞬时功率）、20 组 MATLAB 基准输入设计、手算期望值。
+- **人工把控部分**：选题（电机控制数值内核）、纯数学边界（不做 I/O）、与 `hwlxmm/dsp` 的区分（SVPWM 调制链 vs 瞬时功率）、20 组数值夹具的输入设计、手算期望值。
 - **AI 生成代码的验证方式**：每个 AI 生成的测试都对照教材公式核验；Clarke/Park 往返测试验证数学一致性；SVPWM 扇区判断取 6 个角度点；合并前 CI 必须通过。
 - **未做的事项**：未复制 TI C2000 / ST MCSDK 代码（只交叉参照数学步骤）；不自造自证的期望值；不把 AI 生成的测试数据当真值。
