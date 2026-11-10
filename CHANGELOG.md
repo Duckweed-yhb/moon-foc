@@ -2,7 +2,13 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
-## [Unreleased]
+## [0.1.4] - 2026-11-10
+
+### Added
+
+- `svpwm/check_inputs`：校验 alpha / beta / ts / vdc 全部有限且 `ts > 0`、`vdc > 0`，不合法返回结构化 `Err`。NaN 判定用 IEEE 754 的 `x != x`、无穷用 `|x| > 1e308`，跨 wasm-gc / js / native 语义一致。
+- `svpwm/duties_checked`：校验后再算占空比，让调用方能区分「算出来就是 0」与「输入不合法」。补 5 条单测（正常点、ts=0 / vdc=0 / 负 ts、NaN / Inf、退化输入返回零而非 NaN）。
+- `duties` 对 `ts <= 0` 或 `vdc <= 0` 返回 `(0, 0, 0)`：此前会在 `2*T_on/Ts` 处产生 inf/NaN。
 
 ### Changed
 

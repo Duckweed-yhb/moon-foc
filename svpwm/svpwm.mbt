@@ -77,6 +77,12 @@ pub fn duties(
   ts : Double,
   vdc : Double,
 ) -> (Double, Double, Double) {
+  // 退化输入不返回 NaN：ts<=0 会让最后的除法变成 inf/NaN，控制环拿到 NaN
+  // 之后故障点离源头很远。要区分「算出来就是 0」和「输入不合法」，用
+  // duties_checked。
+  if ts <= 0.0 || vdc <= 0.0 {
+    return (0.0, 0.0, 0.0)
+  }
   let sector = sector_of(alpha, beta)
   let (t1, t2) = action_times(alpha, beta, sector, ts, vdc)
   let t0 = ts - t1 - t2
@@ -94,4 +100,59 @@ pub fn duties(
   let db = 2.0 * tb / ts - 1.0
   let dc = 2.0 * tc / ts - 1.0
   (da, db, dc)
+}
+
+///|
+/// 单值是否为可用于计算的有限数（NaN 与 ±Inf 都返回 false）。
+///
+/// 不用标准库的 is_nan / is_inf：IEEE 754 的 `x != x` 与量级判断在任何
+/// 后端都是同一语义，跨 wasm-gc / js / native 不会因运行时差异而不同。
+fn finite(x : Double) -> Bool {
+  if x != x {
+    return false // NaN
+  }
+  if x.abs() > 1.0e308 {
+    return false // ±Inf
+  }
+  true
+}
+
+///|
+/// 校验一组计算输入：alpha / beta / ts / vdc 必须全部有限，且 ts>0、vdc>0。
+///
+/// 控制环里出现 NaN 最怕的是「静默往下传」：占空比变成 NaN 之后，PWM 比较
+/// 寄存器写入什么取决于下游实现，故障点离源头很远。这里在入口挡住。
+pub fn check_inputs(
+  alpha : Double,
+  beta : Double,
+  ts : Double,
+  vdc : Double,
+) -> Result[Unit, String] {
+  if !finite(alpha) || !finite(beta) {
+    return Err("reference vector is not finite")
+  }
+  if !finite(ts) || ts <= 0.0 {
+    return Err("switch period must be finite and > 0")
+  }
+  if !finite(vdc) || vdc <= 0.0 {
+    return Err("dc bus voltage must be finite and > 0")
+  }
+  Ok(())
+}
+
+///|
+/// 带校验的占空比计算：输入不合法时返回结构化错误，而不是 NaN。
+///
+/// `duties` 保持原签名（[0,1] 之外由下游兜底）；需要区分「算出来是 0」和
+/// 「输入不合法」的调用方用这个。
+pub fn duties_checked(
+  alpha : Double,
+  beta : Double,
+  ts : Double,
+  vdc : Double,
+) -> Result[(Double, Double, Double), String] {
+  match check_inputs(alpha, beta, ts, vdc) {
+    Err(e) => Err(e)
+    Ok(_) => Ok(duties(alpha, beta, ts, vdc))
+  }
 }

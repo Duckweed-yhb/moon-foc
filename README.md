@@ -4,14 +4,14 @@
 
 MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native、wasm-gc 可构建、可运行示例、36 个用例全过；js 可构建、`check --deny-warn` 干净，但本机没有可用的 node，测试交给 CI；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵本机全绿」。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native、wasm-gc 可构建、可运行示例、41 个用例全过；js 可构建、`check --deny-warn` 干净，但本机没有可用的 node，测试交给 CI；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵本机全绿」。
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.3`（Latest 0.1.3，MIT，2026-11-10 发布）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.4`（Latest 0.1.4，MIT，2026-11-10 发布）：
 
 ```
-moon add Duckweed/moon-foc@0.1.3
+moon add Duckweed/moon-foc@0.1.4
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。
@@ -41,9 +41,15 @@ moon run examples/demo --target js
 - SVPWM 占空比以 0 为中心（范围 [-1, 1]）；0 表示 50% 导通时间。
 - 线性调制区边界：`|Vref| <= Vdc/√3`；超出后对 T1/T2 做缩放，使 `T1+T2 = Ts`。
 
+输入校验：
+
+- `check_inputs(alpha, beta, ts, vdc) -> Result[Unit, String]`：四个输入必须全部有限，且 `ts > 0`、`vdc > 0`。
+- `duties_checked(...) -> Result[(Double, Double, Double), String]`：同上校验通过再去算占空比；需要区分「算出来就是 0」与「输入不合法」时用它。
+- `duties` 本身保持原签名：遇到 `ts <= 0` 或 `vdc <= 0` 时返回 `(0, 0, 0)`，不返回 NaN——控制环里 NaN 会一路传到 PWM 比较寄存器，故障点离源头很远。
+
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 36 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
+CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 41 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -55,7 +61,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-36 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，以及 20 组独立数值夹具，其期望值由库外独立算出。
+41 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，以及 20 组独立数值夹具，其期望值由库外独立算出。
 
 ## 独立数值夹具
 
