@@ -6,13 +6,18 @@
 ///
 /// 过调制：当 T1+T2 > Ts 时按比例缩放，使 T1+T2=Ts。
 
+///|
 /// 根据 alpha/beta 判断扇区（1-6）。
 ///
 /// 直接用 atan2 算电角度 theta_e ∈ [0, 2pi)，再按 pi/3 分扇区。
 /// 扇区 1 = [0, pi/3)，扇区 2 = [pi/3, 2pi/3)，...，扇区 6 = [5pi/3, 2pi)。
-pub fn sector_of(alpha : Double, beta : Double) -> Int {
+pub fn sector_of(alpha : Double, beta : Double) -> Int32 {
   let theta = @math.atan2(beta, alpha)
-  let theta_pos = if theta < 0.0 { theta + 3.141592653589793 * 2.0 } else { theta }
+  let theta_pos = if theta < 0.0 {
+    theta + 3.141592653589793 * 2.0
+  } else {
+    theta
+  }
   let sector = (theta_pos / (3.141592653589793 / 3.0)).floor().to_int() + 1
   if sector > 6 {
     return 6
@@ -20,11 +25,16 @@ pub fn sector_of(alpha : Double, beta : Double) -> Int {
   sector
 }
 
+///|
 /// 计算相邻矢量作用时间 T1/T2（与 Ts 同单位）。
 ///
 /// 返回 (T1, T2)。线性区按 sin 分解；当 T1+T2 > Ts 时按比例缩放使 T1+T2=Ts。
 pub fn action_times(
-  alpha : Double, beta : Double, sector : Int, ts : Double, vdc : Double,
+  alpha : Double,
+  beta : Double,
+  sector : Int32,
+  ts : Double,
+  vdc : Double,
 ) -> (Double, Double) {
   if vdc <= 0.0 || ts <= 0.0 {
     return (0.0, 0.0)
@@ -57,11 +67,15 @@ pub fn action_times(
   (t1, t2)
 }
 
+///|
 /// 扇区 + T1/T2 → 三相占空比 (da, db, dc) ∈ [-1, 1]。
 ///
 /// 七段式对称发波：零矢量在两端和中点平分 T0。
 pub fn duties(
-  alpha : Double, beta : Double, ts : Double, vdc : Double,
+  alpha : Double,
+  beta : Double,
+  ts : Double,
+  vdc : Double,
 ) -> (Double, Double, Double) {
   let sector = sector_of(alpha, beta)
   let (t1, t2) = action_times(alpha, beta, sector, ts, vdc)

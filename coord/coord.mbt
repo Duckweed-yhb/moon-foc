@@ -13,13 +13,15 @@
 ///
 /// Angles are in radians. cos/sin are periodic; callers can feed any theta.
 
+///|
 /// Three-phase to alpha-beta (Clarke, amplitude-invariant).
 pub fn clarke(ia : Double, ib : Double, ic : Double) -> (Double, Double) {
-  let alpha = (2.0 / 3.0) * (ia - ib / 2.0 - ic / 2.0)
-  let beta = (1.0 / 3.0.sqrt()) * (ib - ic)
+  let alpha = 2.0 / 3.0 * (ia - ib / 2.0 - ic / 2.0)
+  let beta = 1.0 / 3.0.sqrt() * (ib - ic)
   (alpha, beta)
 }
 
+///|
 /// Alpha-beta back to three-phase (inverse Clarke).
 /// With the amplitude-invariant convention, ia+ib+ic == 0 automatically.
 pub fn inv_clarke(alpha : Double, beta : Double) -> (Double, Double, Double) {
@@ -29,6 +31,7 @@ pub fn inv_clarke(alpha : Double, beta : Double) -> (Double, Double, Double) {
   (ia, ib, ic)
 }
 
+///|
 /// Alpha-beta to d-q (Park transform). theta is the electrical angle in radians.
 pub fn park(alpha : Double, beta : Double, theta : Double) -> (Double, Double) {
   let c = @math.cos(theta)
@@ -38,6 +41,7 @@ pub fn park(alpha : Double, beta : Double, theta : Double) -> (Double, Double) {
   (d, q)
 }
 
+///|
 /// d-q back to alpha-beta (inverse Park).
 pub fn inv_park(d : Double, q : Double, theta : Double) -> (Double, Double) {
   let c = @math.cos(theta)

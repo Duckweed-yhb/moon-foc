@@ -10,4 +10,11 @@ repository = "https://github.com/Duckweed-yhb/moon-foc"
 
 license = "MIT"
 
-keywords = ["pmsm", "svpwm", "foc", "motor-control", "coordinate-transform", "numerical"]
+keywords = [
+  "pmsm",
+  "svpwm",
+  "foc",
+  "motor-control",
+  "coordinate-transform",
+  "numerical",
+]

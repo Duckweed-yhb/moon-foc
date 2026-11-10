@@ -5,6 +5,6 @@ supported_targets = "wasm+wasm-gc+js+native"
 pkgtype(kind: "executable")
 
 import {
-  "Duckweed/moon-foc/coord" @coord,
-  "Duckweed/moon-foc/svpwm" @svpwm,
+  "Duckweed/moon-foc/coord",
+  "Duckweed/moon-foc/svpwm",
 }
