@@ -138,3 +138,19 @@ test "dead time compensation clamps even when it is skipped" {
   assert_eq(b, -1.0)
   assert_eq(c, 0.5)
 }
+
+///|
+test "voltage reconstruction and modulation index reject non-finite input" {
+  // 母线电压非正 / NaN：相电压返回 0，不返回负电压或 NaN。
+  let (va1, vb1, vc1) = @svpwm.phase_voltages(0.5, 0.5, 0.5, -24.0)
+  assert_eq(va1, 0.0)
+  assert_eq(vb1, 0.0)
+  assert_eq(vc1, 0.0)
+  let nan = 0.0 / 0.0
+  let (va2, _, _) = @svpwm.phase_voltages(0.5, 0.5, 0.5, nan)
+  assert_eq(va2, 0.0)
+  // 调制比遇到 NaN 返回 0（"没进过调制"），而不是 NaN。
+  assert_eq(@svpwm.modulation_index(nan, 0.0, 24.0), 0.0)
+  assert_eq(@svpwm.modulation_index(1.0, nan, 24.0), 0.0)
+  assert_false(@svpwm.is_overmodulated(nan, 0.0, 24.0))
+}

@@ -2,6 +2,17 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [Unreleased]
+
+### Fixed
+
+- `svpwm/phase_voltages` 对非正 / 非有限母线电压返回 `(0,0,0)`：此前 `vdc<0` 会给出负相电压，NaN 会原样穿出去。
+- `svpwm/modulation_index` 对非有限输入返回 0 而不是 NaN：NaN 流进比较只会得到 false（"没进过调制"），比显式 0 更难查；需要区分时用 `check_inputs`。
+- 1 条测试覆盖上述两条（负电压、NaN 输入）。
+
+### Changed
+
+- 测试数 56 → 57。
 ## [0.1.7] - 2026-11-11
 
 ### Fixed

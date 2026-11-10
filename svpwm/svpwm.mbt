@@ -170,7 +170,10 @@ pub fn duties_checked(
 /// 与 `action_times` 里的钳位配套使用：钳位只保证 T1+T2=Ts，不告诉调用方
 /// 「已经削顶了」。需要报警或降额时用这个判断，别去反推 T1/T2。
 pub fn modulation_index(alpha : Double, beta : Double, vdc : Double) -> Double {
-  if vdc <= 0.0 {
+  // 非有限输入或非正母线电压：返回 0 而不是 NaN。NaN 一路传到比较里
+  // 只会得到 false（"没进过调制"），比显式的 0 更难查。
+  // 需要区分「调制比为 0」与「输入非法」时先用 check_inputs。
+  if !finite(alpha) || !finite(beta) || !finite(vdc) || vdc <= 0.0 {
     return 0.0
   }
   let vref = (alpha * alpha + beta * beta).sqrt()
@@ -196,6 +199,11 @@ pub fn phase_voltages(
   dc : Double,
   vdc : Double,
 ) -> (Double, Double, Double) {
+  // 母线电压非正时相电压没有物理意义（负电压会被下游当成真的），
+  // 与 duties 的退化输入约定保持一致：一律返回 0。
+  if !finite(vdc) || vdc <= 0.0 {
+    return (0.0, 0.0, 0.0)
+  }
   let half = vdc / 2.0
   (da * half, db * half, dc * half)
 }
