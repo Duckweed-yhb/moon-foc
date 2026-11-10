@@ -46,6 +46,11 @@ pub fn action_times(
   if vdc <= 0.0 || ts <= 0.0 {
     return (0.0, 0.0)
   }
+  // 非有限输入：下面全是浮点运算，NaN 会一路穿到 T1/T2 并变成占空比。
+  // 控制环拿到 NaN 占空比不会报错，只会在比较寄存器那头出怪事。
+  if !finite(alpha) || !finite(beta) {
+    return (0.0, 0.0)
+  }
   let vref = (alpha * alpha + beta * beta).sqrt()
   if vref <= 0.000000000001 {
     return (0.0, 0.0)
@@ -88,6 +93,10 @@ pub fn duties(
   // 之后故障点离源头很远。要区分「算出来就是 0」和「输入不合法」，用
   // duties_checked。
   if ts <= 0.0 || vdc <= 0.0 {
+    return (0.0, 0.0, 0.0)
+  }
+  // 与 action_times 同一口径：非有限输入返回零矢量，不产出 NaN 占空比。
+  if !finite(alpha) || !finite(beta) {
     return (0.0, 0.0, 0.0)
   }
   let sector = sector_of(alpha, beta)

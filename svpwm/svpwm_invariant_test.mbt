@@ -154,3 +154,27 @@ test "voltage reconstruction and modulation index reject non-finite input" {
   assert_eq(@svpwm.modulation_index(1.0, nan, 24.0), 0.0)
   assert_false(@svpwm.is_overmodulated(nan, 0.0, 24.0))
 }
+
+///|
+test "duties and action times return zeros for non finite input" {
+  let nan = 0.0 / 0.0
+  let inf = 1.0 / 0.0
+  // duties 是 README 快速开始里的主入口：非有限输入返回零矢量，
+  // 不产出 NaN 占空比（NaN 写进比较寄存器不会报错，只会在下游出怪事）。
+  let (da, db, dc) = @svpwm.duties(nan, nan, 0.0001, 24.0)
+  assert_eq(da, 0.0)
+  assert_eq(db, 0.0)
+  assert_eq(dc, 0.0)
+  let (ea, eb, ec) = @svpwm.duties(inf, 0.0, 0.0001, 24.0)
+  assert_eq(ea, 0.0)
+  assert_eq(eb, 0.0)
+  assert_eq(ec, 0.0)
+  let (t1, t2) = @svpwm.action_times(nan, 1.0, 1, 0.0001, 24.0)
+  assert_eq(t1, 0.0)
+  assert_eq(t2, 0.0)
+  // 合法输入不受影响。
+  let (g1, g2, g3) = @svpwm.duties(1.0, 0.5, 0.0001, 24.0)
+  assert_true((g1 != g1) == false)
+  assert_true(g2 == g2)
+  assert_true(g3 == g3)
+}
