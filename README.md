@@ -4,14 +4,14 @@
 
 MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native、wasm-gc 可构建、可运行示例、58 个用例全过；js 可构建、`check --deny-warn` 干净，但本机没有可用的 node，测试交给 CI；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵本机全绿」。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native、wasm-gc 可构建、可运行示例、65 个用例全过；js 可构建、`check --deny-warn` 干净，但本机没有可用的 node，测试交给 CI；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵本机全绿」。
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.9`（Latest 0.1.9，MIT，2026-11-10 发布）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.10`（Latest 0.1.10，MIT，2026-11-10 发布）：
 
 ```
-moon add Duckweed/moon-foc@0.1.9
+moon add Duckweed/moon-foc@0.1.10
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。
@@ -58,9 +58,23 @@ moon run examples/demo --target js
 - `duties_checked(...) -> Result[(Double, Double, Double), String]`：同上校验通过再去算占空比；需要区分「算出来就是 0」与「输入不合法」时用它。
 - `duties` 本身保持原签名：遇到 `ts <= 0`、`vdc <= 0` 或输入非有限（NaN / Inf）时返回 `(0, 0, 0)`，不返回 NaN——控制环里 NaN 会一路传到 PWM 比较寄存器，故障点离源头很远。
 
+## 电流环 PI
+
+`pi/` 包是 FOC 电流环的「误差 → 电压指令」环节，和调制分开：调制是「电压 → 占空比」的映射，PI 是反馈。
+
+```moon
+let iq_pi = @pi.Pi::new(0.5, 20.0, 1.0e-4, -12.0, 12.0)   // kp / ki / dt / 下限 / 上限
+let vq = iq_pi.step(iq_ref - iq_meas)
+iq_pi.reset()                                              // 切模式 / 重新使能时清积分
+```
+
+- 抗饱和用条件积分：输出顶到限幅、且误差还在把它往同方向推时冻结积分器；误差反向就照常积分，退饱和在一个采样步内完成。
+- 非有限误差（NaN / Inf）不进入状态，返回当前积分项的限幅值——坏采样不会污染调节器。
+- `dt <= 0` 按 0 处理，退化成纯 P。
+
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 58 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
+CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 65 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -72,7 +86,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-58 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，以及 20 组独立数值夹具，其期望值由库外独立算出。
+65 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，以及 20 组独立数值夹具，其期望值由库外独立算出。
 
 ## 独立数值夹具
 
