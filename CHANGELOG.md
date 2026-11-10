@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/check-release.ps1` + CI 的 `release-meta` job：校验 `moon.mod` 的 version、CHANGELOG 最新版本段标题、README 里所有 `<模块>@x.y.z` 与 `Latest x.y.z` 三处一致，并拒绝重复的版本段。发布时漏改任何一处都不会报错，只会让文档慢慢变成谎话；现在它们对不上就红。
+
 ## [0.1.11] - 2026-11-11
 
 ### Fixed

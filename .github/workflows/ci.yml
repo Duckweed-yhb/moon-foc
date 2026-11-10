@@ -50,3 +50,14 @@ jobs:
       # 不能只在 README 里写着「可以运行」。
       - name: Run examples/demo
         run: moon run examples/demo --target native
+
+  release-meta:
+    name: release metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # moon.mod 的 version、CHANGELOG 最新段标题、README 的安装版本三处必须一致。
+      # 发布时漏改任何一处都不会报错，只会让文档变成谎话——用脚本挡在这里。
+      - name: Check version / CHANGELOG / README consistency
+        shell: pwsh
+        run: ./scripts/check-release.ps1
