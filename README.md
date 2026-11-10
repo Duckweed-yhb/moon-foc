@@ -4,14 +4,14 @@
 
 MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native 与 js 可构建、可运行示例、可通过单元测试；wasm-gc 在本机与 CI 中通过 check / build / test；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵全绿」。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.30261012 实测为准：native 与 js 可构建、可运行示例、可通过单元测试；wasm-gc 在本机与 CI 中通过 check / build / test；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵全绿」。
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.2`（Latest 0.1.2，MIT，2026-11-09 发布）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.3`（Latest 0.1.3，MIT，2026-11-09 发布）：
 
 ```
-moon add Duckweed/moon-foc@0.1.2
+moon add Duckweed/moon-foc@0.1.3
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。

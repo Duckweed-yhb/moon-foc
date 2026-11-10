@@ -2,6 +2,16 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [0.1.3] - 2026-11-10
+
+### Added
+
+- `angle/` 补极对数边界（`pole_pairs = 0`）与负机械角度归一化用例；测试数 33 → 36。
+
+### Changed
+
+- `moon fmt` 全仓格式化；CI 增加 `moon fmt --check` 步骤。
+
 ## [0.1.2] - 2026-11-09
 
 ### Changed

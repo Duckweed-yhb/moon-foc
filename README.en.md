@@ -8,18 +8,18 @@ Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping) plus Clarke /
 Park / inverse-Park transforms and mechanical-to-electrical angle conversion.
 No C FFI, no I/O. Backend coverage as verified locally with MoonBit
-0.1.20261012: native and js build, run the demo, and pass the unit tests;
+0.1.30261012: native and js build, run the demo, and pass the unit tests;
 wasm-gc passes check/build/test locally and in CI; legacy wasm tests were not
 run, because the local core.core bundle is missing (a toolchain environment
 issue, not a code failure), so a four-backend test matrix is not claimed.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.2` (Latest 0.1.2, MIT,
+Published to mooncakes as `Duckweed/moon-foc@0.1.3` (Latest 0.1.3, MIT,
 published 2026-11-09):
 
 ```
-moon add Duckweed/moon-foc@0.1.2
+moon add Duckweed/moon-foc@0.1.3
 ```
 
 The bundled `examples/demo` can still be run directly from this repository
