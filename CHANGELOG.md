@@ -2,6 +2,12 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [Unreleased]
+
+### Changed
+
+- `examples/demo` 补极对数换算（机械角 0.1 rad × 32 极对 → 3.2 rad），覆盖 `angle/` 包；此前 demo 只用到 Clarke / Park / SVPWM。
+
 ## [0.1.3] - 2026-11-10
 
 ### Added
