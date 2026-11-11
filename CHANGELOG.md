@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-11-11
+
 ### Added
 
 - `svpwm/switching_sequence_of`：从 `alpha/beta` 直接得到七段式开关序列，内部串起 `sector_of` → `action_times` → `switching_sequence`。手工三步最容易在扇区参数上传错、或漏掉输入校验；组合入口在非有限值 / `ts`、`vdc` 非正时返回空数组。3 条测试：与手工三步逐位一致、非法输入返回空、过调制同样钳位且总时长等于 Ts。
