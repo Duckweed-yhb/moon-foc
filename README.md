@@ -4,7 +4,7 @@
 
 MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖口径以本机 MoonBit 0.1.20261012 实测为准：native、wasm-gc 可构建、可运行示例、77 个用例全过；js 可构建、`check --deny-warn` 干净，但本机没有可用的 node，测试交给 CI；legacy wasm 未运行，原因是本机缺少 `core.core` 预编译产物（工具链环境问题，不是代码错误），因此不宣称「四后端测试矩阵本机全绿」。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、77 个用例全过、`check --deny-warn` 干净。
 
 ## 安装
 
@@ -75,7 +75,7 @@ iq_pi.reset()                                              // 切模式 / 重新
 
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 77 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
+CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-11 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 77 passed / 0 failed，四个目标 `moon check --deny-warn` 与 `moon build` 全部干净退出。
 
 ```
 moon check --deny-warn --target wasm-gc

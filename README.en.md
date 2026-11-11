@@ -54,19 +54,19 @@ Conventions:
 
 ## Test
 
-CI (`.github/workflows/ci.yml`) covers wasm-gc only: `moon check --target
-wasm-gc`, `moon build --target wasm-gc`, and `moon test --target wasm-gc`; there
-is no native, js, or legacy-wasm CI job. Local verification on 2026-11-08:
-`moon test --target native`, `--target wasm-gc`, and `--target js` each report
-36 passed / 0 failed, and `moon check --deny-warn --target js` / `--target
-wasm-gc` exit cleanly. Legacy wasm tests were not run (missing local core.core
-bundle, a toolchain environment issue rather than a code failure); a
-four-backend test matrix is not claimed.
+CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
+`native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
+`moon run examples/demo --target native`. Local verification on 2026-11-11
+(toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
+report 77 passed / 0 failed, and `moon check --deny-warn` plus `moon build`
+exit cleanly on all four targets.
 
 ```
 moon check --deny-warn --target wasm-gc
 moon test --target wasm-gc
-# local additional targets, not part of CI:
+# local additional targets:
+moon check --deny-warn --target wasm
+moon test --target wasm
 moon check --deny-warn --target native
 moon test --target native
 moon check --deny-warn --target js
