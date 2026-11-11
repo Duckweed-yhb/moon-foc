@@ -26,11 +26,11 @@ let sector = @svpwm.sector_of(alpha, beta)            // → 1
 let (da, db, dc) = @svpwm.duties(alpha, beta, 0.0001, 24.0)  // Vdc=24V, Ts=100us
 ```
 
-显式指定目标后端运行自带示例（裸默认目标 wasm 因本机缺 core bundle 无法运行）：
+运行自带示例（默认 wasm 后端即可，也可显式指定其它后端）：
 
 ```
+moon run examples/demo                    # 默认 wasm
 moon run examples/demo --target native
-# 另一可运行目标：
 moon run examples/demo --target js
 ```
 

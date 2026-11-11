@@ -7,19 +7,17 @@ PMSM SVPWM modulation and coordinate transform numerical kernel in MoonBit.
 Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping) plus Clarke /
 Park / inverse-Park transforms and mechanical-to-electrical angle conversion.
-No C FFI, no I/O. Backend coverage as verified locally with MoonBit
-0.1.30261012: native and js build, run the demo, and pass the unit tests;
-wasm-gc passes check/build/test locally and in CI; legacy wasm tests were not
-run, because the local core.core bundle is missing (a toolchain environment
-issue, not a code failure), so a four-backend test matrix is not claimed.
+No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104: wasm, wasm-gc,
+js and native all build, run the demo and pass `moon test` (77/77 on each),
+with `moon check --deny-warn` clean on all four targets.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.3` (Latest 0.1.3, MIT,
+Published to mooncakes as `Duckweed/moon-foc@0.1.13` (Latest 0.1.13, MIT,
 published 2026-11-10):
 
 ```
-moon add Duckweed/moon-foc@0.1.3
+moon add Duckweed/moon-foc@0.1.13
 ```
 
 The bundled `examples/demo` can still be run directly from this repository
@@ -35,12 +33,12 @@ let sector = @svpwm.sector_of(alpha, beta)            // → 1
 let (da, db, dc) = @svpwm.duties(alpha, beta, 0.0001, 24.0)  // Vdc=24V, Ts=100us
 ```
 
-Run the bundled demo with an explicit target (the bare default target wasm cannot
-run locally because its core bundle is missing):
+Run the bundled demo (the default wasm target works, and other targets are
+supported too):
 
 ```
+moon run examples/demo                    # default wasm
 moon run examples/demo --target native
-# equivalent runnable target:
 moon run examples/demo --target js
 ```
 
