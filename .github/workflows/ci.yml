@@ -13,10 +13,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
         uses: hustcer/setup-moonbit@v1
-        with:
-          # 钉住与本地验证一致的工具链版本：fmt 规则随版本漂移，
-          # 不钉住会出现「本地 fmt 通过、CI fmt 失败」这种假红灯。
-          version: 0.1.20261012
       - name: moon fmt --check
         run: moon fmt --check
 
@@ -33,10 +29,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
         uses: hustcer/setup-moonbit@v1
-        with:
-          # 钉住与本地验证一致的工具链版本：fmt 规则随版本漂移，
-          # 不钉住会出现「本地 fmt 通过、CI fmt 失败」这种假红灯。
-          version: 0.1.20261012
 
       - name: Check (deny warnings)
         run: moon check --target ${{ matrix.target }} --deny-warn
@@ -54,12 +46,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
         uses: hustcer/setup-moonbit@v1
-        with:
-          # 钉住与本地验证一致的工具链版本：fmt 规则随版本漂移，
-          # 不钉住会出现「本地 fmt 通过、CI fmt 失败」这种假红灯。
-          version: 0.1.20261012
-      # 验收第 6 条：至少一个可运行示例。示例必须能被 CI 真正跑起来，
-      # 不能只在 README 里写着「可以运行」。
       - name: Run examples/demo
         run: moon run examples/demo --target native
 

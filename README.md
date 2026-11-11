@@ -75,7 +75,7 @@ iq_pi.reset()                                              // 切模式 / 重新
 
 ## 测试
 
-CI（`.github/workflows/ci.yml`，工具链钉住 0.1.20261012 与本地一致）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 77 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
+CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-10 实测：`moon test --target native`、`--target wasm-gc` 均为 77 passed / 0 failed，三个目标的 `moon check --deny-warn` 与 `moon build` 全部干净退出；`js` 后端的测试本机跑不了（PATH 里没有可用的 node），交给 CI 验证，因此不宣称本机四后端全绿。legacy wasm 测试未运行（本机缺 core.core bundle，属工具链环境问题而非代码错误），不宣称四后端测试矩阵全绿。
 
 ```
 moon check --deny-warn --target wasm-gc
