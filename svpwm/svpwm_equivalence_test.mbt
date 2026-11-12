@@ -85,8 +85,10 @@ test "dead time compensation follows current sign" {
   let (da, db, dc) = @svpwm.dead_time_compensation(
     0.0, 0.0, 0.0, 1.0, -1.0, 0.0, td, ts,
   )
-  assert_true((da - 0.005).abs() < 1.0e-12) // 正电流 → 占空比加
-  assert_true((db + 0.005).abs() < 1.0e-12) // 负电流 → 占空比减
+  // 补偿量是 2·td/ts，不是 td/ts：本包的占空比域是 d ↔ d·Vdc/2 的相电压，
+  // 死区丢掉的伏秒是 Td·Vdc，平均电压误差 (Td/Ts)·Vdc 换回占空比要乘 2/Vdc。
+  assert_true((da - 0.01).abs() < 1.0e-12) // 正电流 → 占空比加
+  assert_true((db + 0.01).abs() < 1.0e-12) // 负电流 → 占空比减
   assert_eq(dc, 0.0) // 零电流不补偿
 }
 

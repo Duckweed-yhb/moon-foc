@@ -115,6 +115,12 @@ pub fn duties(
   let da = 2.0 * ta / ts - 1.0
   let db = 2.0 * tb / ts - 1.0
   let dc = 2.0 * tc / ts - 1.0
+  // 最终守卫：入口的 finite 只看得见原始输入，中间量却可能先溢出
+  // （alpha² 在 |alpha| > 1.34e154 时已经是 Inf，再乘 0 就变 NaN；
+  // vdc 极小时 k = √3·ts/vdc 也会溢出）。README 承诺「不返回 NaN」，这里兜底。
+  if !finite(da) || !finite(db) || !finite(dc) {
+    return (0.0, 0.0, 0.0)
+  }
   (da, db, dc)
 }
 
@@ -267,20 +273,25 @@ pub fn duties_from_voltages(
   // 零序注入：把三相参考的中点移到母线电压中点。
   let offset = -(vmax + vmin) / 2.0
   let half = vdc / 2.0
-  // 载波法在 m > 2/√3 时占空比会越过 ±1，这里饱和而不是外推：
+  // 载波法在 m > 1 时占空比会越过 ±1，这里饱和而不是外推：
   // 下游拿到越界占空比只会写进比较寄存器，故障点离这里太远。
-  (
-    clamp_duty((va + offset) / half),
-    clamp_duty((vb + offset) / half),
-    clamp_duty((vc + offset) / half),
-  )
+  let da = clamp_duty((va + offset) / half)
+  let db = clamp_duty((vb + offset) / half)
+  let dc = clamp_duty((vc + offset) / half)
+  // vdc 极小（如 5e-324）时 half 下溢、除法溢出成 Inf，NaN 也会穿过钳位
+  // （`NaN > 1` 恒 false）。最终守卫保证不返回 NaN，与 duties 同口径。
+  if !finite(da) || !finite(db) || !finite(dc) {
+    return (0.0, 0.0, 0.0)
+  }
+  (da, db, dc)
 }
 
 ///|
 /// 死区补偿：按电流方向修正占空比。
 ///
-/// 互补 PWM 的死区会让实际输出电压向电流方向「少」，补偿量为
-/// `sign(i_p) · (td / ts)`。返回补偿后的占空比，并钳位到 [-1, 1]。
+/// 互补 PWM 的死区会让实际输出电压向电流方向「少」，按占空比域补偿量为
+/// `sign(i_p) · 2·td/ts`（推导见实现处；本包的 d ↔ d·Vdc/2 相电压）。
+/// 返回补偿后的占空比，并钳位到 [-1, 1]。
 ///
 /// 约定：`td` 与 `ts` 同单位（秒），`td/ts` 应远小于 1；`ts <= 0` 时原样返回。
 /// `ia/ib/ic` 用 A（符号即可），零电流不补偿。
@@ -295,11 +306,15 @@ pub fn dead_time_compensation(
   ts : Double,
 ) -> (Double, Double, Double) {
   // 无死区 / 非法周期：原样返回，但仍然钳位——调用方不该因为「这次没补偿」
-  // 就拿到越界占空比。
-  if ts <= 0.0 || td <= 0.0 {
+  // 就拿到越界占空比。NaN 一并挡掉：`NaN <= 0` 恒 false，会穿过去变成 NaN 输出。
+  if ts != ts || td != td || ts <= 0.0 || td <= 0.0 {
     return (clamp_duty(da), clamp_duty(db), clamp_duty(dc))
   }
-  let delta = td / ts
+  // 量纲：本包的占空比域是 d ↔ d·Vdc/2 的相电压（见 phase_voltages）。
+  // 死区让每相每周期的伏秒损失 Td·Vdc，平均电压误差 = (Td/Ts)·Vdc，
+  // 换回占空比域要乘 2/Vdc，即 Δd = 2·Td/Ts。以前写成 Td/Ts，只补了一半
+  // ——而且测试把这个 0.005 一起写进了期望值，等于把错误锁住。
+  let delta = 2.0 * td / ts
   (
     clamp_duty(da + sign_of(ia) * delta),
     clamp_duty(db + sign_of(ib) * delta),
@@ -360,9 +375,17 @@ pub fn switching_sequence(
   }
   // 扇区边界上 sin 的浮点残差会让 t1/t2 出现 −1e−17 量级的负数；
   // 夹到 0 再判总时长，别把正常输入当非法。
+  //
+  // 容差必须是相对的：比例钳位后 t1+t2 = ts·(1±1e-16)，绝对容差 1e-18 在
+  // ts 较大（0.01 s 以上）时会把合法的过调制输入判成非法、返回空数组。
+  // NaN 也要挡：`NaN < 0` 与 `NaN > x` 都是 false，会一路穿过判据被当成
+  // 「零时长段」丢掉，最后返回一个段数合理、总时长等于 Ts 的假序列。
+  if t1 != t1 || t2 != t2 {
+    return out
+  }
   let t1c = if t1 < 0.0 { 0.0 } else { t1 }
   let t2c = if t2 < 0.0 { 0.0 } else { t2 }
-  if t1c + t2c > ts + 1.0e-18 {
+  if t1c + t2c > ts * (1.0 + 1.0e-12) {
     return out
   }
   // 六个基本矢量的三相开关状态（a b c）。

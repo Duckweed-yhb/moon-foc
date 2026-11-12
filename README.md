@@ -45,8 +45,12 @@ moon run examples/demo --target js
 - 角度：`mechanical_to_electrical(mech, p)` 给出电角度；`electrical_to_mechanical(elec, p)`
   是**周期意义下**的逆，输出落在 `[0, 2π/p)`，满足往返后回到同一个电角度。
 - 第二条调制路径：`duties_from_voltages(va, vb, vc, Vdc)` 用载波法（零序注入 `(vmax+vmin)/2`）
-  算占空比，与 `duties(α, β)` 在 `m ≤ 1.1547` 内数值一致（实测偏差 1e-15），超出后
-  饱和到 ±1 而不是外推。两条路径互证：任一条改了扇区映射，另一条立刻报差异。
+  算占空比，与 `duties(α, β)` 在 **`m ≤ 1`** 内数值一致（实测偏差 1e-15），超出后
+  饱和到 ±1 而不是外推。**不是 1.1547**：载波法的峰值占空比恰好等于 m
+  （注入后峰值相值 `√3·Vm/2`，除以 `Vdc/2` 得 `√3·Vm/Vdc = m`），所以 m=1 就开始削顶；
+  `duties` 在 `T1+T2 > Ts` 即 m>1 开始比例钳位，两条路径的一致性边界就是 m=1。
+  过调制区两者策略不同（`duties` 保相位、载波法逐相饱和会失真相位），不要混用。
+  两条路径互证：任一条改了扇区映射，另一条立刻报差异。
 - 死区补偿：`dead_time_compensation(da, db, dc, ia, ib, ic, td, ts)` 按电流方向加
   `sign(i)·td/ts` 并钳位到 ±1；三相同号时是共模偏移，线电压不变（测试锁住这条性质）。
 - 开关序列：`switching_sequence(sector, t1, t2, ts)` 给七段式的 `(开关状态, 持续时间)` 序列（0→Vk→Vk+1→7→Vk+1→Vk→0），零时长段会被丢掉（过调制边界退化时不会给出零脉冲）；`on_time_of_phase` 把序列折回每相高电平时间——与 `duties` 自洽，测试里两条路径互相校验。手工三步（`sector_of` → `action_times` → `switching_sequence`）最容易把扇区传错，`switching_sequence_of(alpha, beta, ts, vdc)` 是它们的组合入口，输入不合法时返回空数组。
