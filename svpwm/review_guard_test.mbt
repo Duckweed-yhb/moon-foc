@@ -28,7 +28,7 @@ test "duties never returns NaN for extreme but finite inputs" {
 }
 
 ///|
-/// `duties_checked` 不能把一个 NaN 结果包装成 Ok。
+/// `duties_checked` 不能把「算不出来、只能兜底返回零矢量」的输入报成 Ok。
 test "duties_checked never reports Ok with NaN" {
   match @svpwm.duties_checked(1.0e200, 0.0, 0.0001, 24.0) {
     Ok(t) => {
@@ -38,6 +38,11 @@ test "duties_checked never reports Ok with NaN" {
     }
     Err(_) => ()
   }
+  // 平方会溢出的量级必须在入口就被拒，而不是算出零矢量再报 Ok
+  assert_true(@svpwm.check_inputs(1.0e200, 0.0, 0.0001, 24.0) is Err(_))
+  assert_true(@svpwm.check_inputs(0.0, 0.0, 0.0001, 5.0e-324) is Err(_))
+  // 正常量级仍然通过
+  assert_true(@svpwm.check_inputs(0.5, 0.5, 0.0001, 24.0) is Ok(_))
 }
 
 ///|

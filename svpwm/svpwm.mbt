@@ -140,24 +140,40 @@ fn finite(x : Double) -> Bool {
 }
 
 ///|
-/// 校验一组计算输入：alpha / beta / ts / vdc 必须全部有限，且 ts>0、vdc>0。
+/// 校验一组计算输入：alpha / beta / ts / vdc 必须全部有限且在可计算范围内，
+/// 且 ts>0、vdc>0。
 ///
 /// 控制环里出现 NaN 最怕的是「静默往下传」：占空比变成 NaN 之后，PWM 比较
 /// 寄存器写入什么取决于下游实现，故障点离源头很远。这里在入口挡住。
+///
+/// 上界不是 `DBL_MAX`：`alpha² + beta²` 会先平方再开方，`|alpha| > √DBL_MAX
+/// ≈ 1.34e154` 时平方就已经溢出成 Inf，后面乘 sin 得 NaN。所以按「能安全平方」
+/// 的范围挡，而不是只判「是不是 Inf」——否则 `duties_checked` 会把一个算不出
+/// 结果、只能兜底返回零矢量的输入报成 Ok。
 pub fn check_inputs(
   alpha : Double,
   beta : Double,
   ts : Double,
   vdc : Double,
 ) -> Result[Unit, String] {
+  let limit = 1.0e154
   if !finite(alpha) || !finite(beta) {
     return Err("reference vector is not finite")
+  }
+  if alpha.abs() > limit || beta.abs() > limit {
+    return Err("reference vector magnitude is out of range")
   }
   if !finite(ts) || ts <= 0.0 {
     return Err("switch period must be finite and > 0")
   }
   if !finite(vdc) || vdc <= 0.0 {
     return Err("dc bus voltage must be finite and > 0")
+  }
+  if ts.abs() > limit || vdc.abs() > limit {
+    return Err("switch period / dc bus voltage is out of range")
+  }
+  if vdc < 1.0e-300 {
+    return Err("dc bus voltage is too small to compute duty cycles")
   }
   Ok(())
 }

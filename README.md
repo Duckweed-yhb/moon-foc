@@ -52,7 +52,8 @@ moon run examples/demo --target js
   过调制区两者策略不同（`duties` 保相位、载波法逐相饱和会失真相位），不要混用。
   两条路径互证：任一条改了扇区映射，另一条立刻报差异。
 - 死区补偿：`dead_time_compensation(da, db, dc, ia, ib, ic, td, ts)` 按电流方向加
-  `sign(i)·td/ts` 并钳位到 ±1；三相同号时是共模偏移，线电压不变（测试锁住这条性质）。
+  `sign(i)·2·td/ts` 并钳位到 ±1（占空比域是 `d ↔ d·Vdc/2` 的相电压，死区丢的伏秒是
+  `Td·Vdc`，换回占空比要乘 `2/Vdc`）；三相同号时是共模偏移，线电压不变（测试锁住这条性质）。
 - 开关序列：`switching_sequence(sector, t1, t2, ts)` 给七段式的 `(开关状态, 持续时间)` 序列（0→Vk→Vk+1→7→Vk+1→Vk→0），零时长段会被丢掉（过调制边界退化时不会给出零脉冲）；`on_time_of_phase` 把序列折回每相高电平时间——与 `duties` 自洽，测试里两条路径互相校验。手工三步（`sector_of` → `action_times` → `switching_sequence`）最容易把扇区传错，`switching_sequence_of(alpha, beta, ts, vdc)` 是它们的组合入口，输入不合法时返回空数组。
 - 输出侧：`phase_voltages(da, db, dc, Vdc)` = duty·Vdc/2；`line_voltages` 给出
   (vab, vbc, vca)，三者之和恒为 0（零序分量的一次差分），观测器与反电势估算用它。
