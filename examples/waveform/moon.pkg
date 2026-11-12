@@ -1,0 +1,9 @@
+///|
+/// examples/waveform — 把一个开关周期的七段式序列画成 ASCII 时序图。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/svpwm",
+}

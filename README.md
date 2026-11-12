@@ -34,6 +34,32 @@ moon run examples/demo --target native
 moon run examples/demo --target js
 ```
 
+## 看一眼输出：一个开关周期的三相桥臂时序
+
+数字表看不出「三相什么时候开、开多久」。`examples/waveform` 把一个开关周期的
+七段式序列直接画出来：
+
+```
+moon run examples/waveform --target native
+```
+
+```
+=== 线性区 m=0.8, theta=30deg ===
+|Vref| = 11.085125168440817 V,  m = 0.8,  sector = 1
+duties  a=0.8  b=0  c=-0.8
+seq     [0 5e-6][4 2e-5][6 2e-5][7 1e-5][6 2e-5][4 2e-5][0 5e-6]
+a  |...######################################################...|
+b  |...............##############################...............|
+c  |...........................######...........................|
+
+=== 过调制 m=1.5, theta=30deg ===
+duties  a=1  b=0  c=-1
+seq     [4 2.5e-5][6 2.5e-5][6 2.5e-5][4 2.5e-5]     ← 零矢量段消失，退化为 4 段
+```
+
+三件事一眼可查：扇区对不对（`seq` 里是 0→V1→V2→7→…）、七段式是否对称
+（首尾两段等长）、三相是否互补（`a` 与 `c` 镜像，`b` 居中）。
+
 约定：
 
 - 幅值不变 Clarke：`alpha = (2/3)(ia - ib/2 - ic/2)`，`beta = (1/√3)(ib - ic)`。
@@ -80,7 +106,7 @@ iq_pi.reset()                                              // 切模式 / 重新
 
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑三件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；以及 `moon run examples/demo --target native`。本机 2026-11-11 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 77 passed / 0 failed，四个目标 `moon check --deny-warn` 与 `moon build` 全部干净退出。
+CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-12 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 84 passed / 0 failed，四个目标 `moon check --deny-warn` 与 `moon build` 全部干净退出。
 
 ```
 moon check --deny-warn --target wasm-gc

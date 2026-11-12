@@ -48,6 +48,10 @@ jobs:
         uses: hustcer/setup-moonbit@v1
       - name: Run examples/demo
         run: moon run examples/demo --target native
+      # 波形报告：七段式序列是否还是「对称、三相互补、扇区正确」。
+      # 它同时是一条便宜的快照——序列映射改了这里会先变。
+      - name: Run examples/waveform
+        run: moon run examples/waveform --target native
 
   release-meta:
     name: release metadata
