@@ -1,0 +1,10 @@
+///|
+/// examples/reject_demo — 把每条输入拒绝路径打印出来。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/svpwm",
+  "Duckweed/moon-foc/angle",
+}

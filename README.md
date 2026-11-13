@@ -16,6 +16,8 @@ moon add Duckweed/moon-foc@0.1.13
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。
 
+> 交付说明（申报书 vs 现状、与「明确不做」的边界、验证证据）：[DELIVERY.md](./DELIVERY.md)。
+
 ## 快速开始
 
 ```moon

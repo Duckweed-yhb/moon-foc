@@ -52,6 +52,9 @@ jobs:
       # 它同时是一条便宜的快照——序列映射改了这里会先变。
       - name: Run examples/waveform
         run: moon run examples/waveform --target native
+      # 拒绝演示：非法 ts/vdc、NaN、越界扇区必须返回零矢量或空序列，不返回 NaN。
+      - name: Run examples/reject_demo
+        run: moon run examples/reject_demo --target native
 
   release-meta:
     name: release metadata
