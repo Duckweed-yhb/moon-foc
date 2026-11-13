@@ -1,0 +1,14 @@
+///|
+/// controller — 单拍 FOC 电流环控制器对象（纯计算，四后端）
+///
+/// 每拍输入三相采样电流与电角度，内部串起
+/// Clarke → Park → d/q 双 PI → 反 Park → SVPWM，输出 d/q 观测电流、
+/// d/q 电压指令与三相占空比。坐标变换、PI 调节器、调制分别复用
+/// coord / pi / svpwm 包，本包只做链路编排与内部状态保存。
+supported_targets = "wasm+wasm-gc+js+native"
+
+import {
+  "Duckweed/moon-foc/coord",
+  "Duckweed/moon-foc/pi",
+  "Duckweed/moon-foc/svpwm",
+}
