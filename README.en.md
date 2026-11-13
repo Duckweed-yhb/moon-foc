@@ -55,6 +55,41 @@ Conventions:
 - Linear modulation limit: `|Vref| <= Vdc/√3`. Beyond that, T1/T2 are scaled
   so `T1+T2 = Ts`.
 
+## Current-loop controller and simplified motor model
+
+`controller/` wires the existing blocks into a per-step object: sample three-phase
+currents → Clarke → Park → d/q dual PI → inverse Park → SVPWM, returning observed
+d/q currents, d/q voltage commands and three-phase duties. Transforms, PI and
+modulation reuse the packages above; this package only orchestrates the chain and
+keeps internal state.
+
+```moon
+let ctrl = @controller.FocController::new(
+  2.0, 1000.0,   // d-axis kp / ki
+  2.0, 1000.0,   // q-axis kp / ki
+  1.0e-4, 24.0,  // Ts / Vdc
+  -12.0, 12.0,   // voltage command clamp
+)
+let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref)
+```
+
+- If any sampled input is non-finite it does not enter PI state; observed values and
+  duties return zero together; `reset()` clears both d/q integrators.
+- `motor/` is an offline simplified PMSM model: R, Ld, Lq, ψf and pole pairs are
+  parameterized; d/q first-order equations are integrated with explicit Euler, and
+  electrical speed is given externally (the model itself does not run a speed loop).
+- `examples/foc_sim` steps the current loop on this simplified model at standstill,
+  iq_ref=2.0 A, id_ref=0 A; the native local convergence numbers are listed in the
+  opening paragraph above.
+
+```
+moon run examples/foc_sim --target native
+```
+
+Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup, and
+the first-order dynamics of the simplified model. Not implemented (out of plan):
+speed loop, d/q decoupling compensation, sensorless observer, real I/O and FFI.
+
 ## Test
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
