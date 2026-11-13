@@ -2,7 +2,7 @@
 
 [English](./README.en.md)
 
-MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
+MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控制器、简化电机模型，以及底层 SVPWM 调制与坐标变换。
 
 面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象与离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、95 个用例全过、`check --deny-warn` 干净。
 
@@ -122,7 +122,7 @@ let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref
 
 - 任一采样输入非有限时不进 PI 状态，观测值与占空比一并返回零；`reset()` 清空 d/q 两侧积分器。
 - `motor/` 是离线仿真用的简化 PMSM 模型：R、Ld、Lq、ψf、极对数参数化，d/q 一阶方程显式欧拉积分，电角速度外部给定（模型本身不生成转速环）。
-- `examples/foc_sim` 在这个简化模型上跑电流环时域步进：静止、iq 给定 2.0 A、id 给定 0 A，可直接看到跟踪轨迹。
+- `examples/foc_sim` 在这个简化模型上跑电流环时域步进：静止、iq 给定 2.0 A、id 给定 0 A。本机 native 实测（2026-11-13，工具链 0.1.20261104）：20 ms 内 iq 跟踪到 1.9999975 A，id 保持 0；0.04 s 起 iq≈2.0 A、id=0、稳态 vq≈1.0 V。
 
 ```
 moon run examples/foc_sim --target native

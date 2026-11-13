@@ -2,7 +2,8 @@
 
 [中文](./README.md) · English
 
-PMSM SVPWM modulation and coordinate transform numerical kernel in MoonBit.
+PMSM field-oriented control numerical library in MoonBit: a closed current-loop
+controller, a simplified motor model, plus SVPWM modulation and Clarke/Park transforms.
 
 Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping), Clarke /
@@ -11,6 +12,9 @@ current-loop object and a simplified `motor/` electrical model for offline
 simulation. No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104:
 wasm, wasm-gc, js and native all build, run the demo and pass `moon test`
 (95/95 on each), with `moon check --deny-warn` clean on all four targets.
+On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
+native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
+and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
 
 ## Install
 
