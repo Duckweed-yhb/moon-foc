@@ -5,11 +5,12 @@
 PMSM SVPWM modulation and coordinate transform numerical kernel in MoonBit.
 
 Pure numerical core for field-oriented control: space-vector PWM (six-sector
-detection, T1/T2 active-vector timing, overmodulation clamping) plus Clarke /
-Park / inverse-Park transforms and mechanical-to-electrical angle conversion.
-No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104: wasm, wasm-gc,
-js and native all build, run the demo and pass `moon test` (77/77 on each),
-with `moon check --deny-warn` clean on all four targets.
+detection, T1/T2 active-vector timing, overmodulation clamping), Clarke /
+Park / inverse-Park transforms, angle conversion, a `controller/` closed
+current-loop object and a simplified `motor/` electrical model for offline
+simulation. No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104:
+wasm, wasm-gc, js and native all build, run the demo and pass `moon test`
+(95/95 on each), with `moon check --deny-warn` clean on all four targets.
 
 ## Install
 
@@ -54,10 +55,11 @@ Conventions:
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
-`moon run examples/demo --target native`. Local verification on 2026-11-11
+`moon run examples/demo --target native`. Local verification on 2026-11-13
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 77 passed / 0 failed, and `moon check --deny-warn` plus `moon build`
-exit cleanly on all four targets.
+report 95 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+four targets. The wasm target is not in the CI matrix and is only verified
+locally.
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -71,12 +73,14 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-36 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+95 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
-order, angle normalization, and 20 independent numeric fixtures whose expected
-values were computed outside this library.
+order, angle normalization, 20 independent numeric fixtures, single-axis PI
+proportional/integral/clamp/anti-windup, controller chain consistency and
+closed-loop step tracking, and the simplified motor model's first-order RL
+response, pole-pair scaling and zero three-phase sum.
 
 ## Independent numeric fixtures
 

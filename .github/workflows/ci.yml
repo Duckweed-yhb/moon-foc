@@ -55,6 +55,9 @@ jobs:
       # 拒绝演示：非法 ts/vdc、NaN、越界扇区必须返回零矢量或空序列，不返回 NaN。
       - name: Run examples/reject_demo
         run: moon run examples/reject_demo --target native
+      # 电流环闭环仿真：模型上跟踪 iq 阶跃，跑通整条 controller 链路。
+      - name: Run examples/foc_sim
+        run: moon run examples/foc_sim --target native
 
   release-meta:
     name: release metadata

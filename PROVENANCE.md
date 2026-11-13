@@ -5,8 +5,9 @@ This file records where the code, the design references, and the test data of
 
 ## Origin of the source code
 
-All MoonBit source under `svpwm/`, `coord/`, `angle/`, and `examples/demo/` was
-written for this project. No source file was copied from another project.
+All MoonBit source under `svpwm/`, `coord/`, `angle/`, `pi/`, `controller/`,
+`motor/`, and `examples/` was written for this project. No source file was
+copied from another project.
 
 ## Design references
 

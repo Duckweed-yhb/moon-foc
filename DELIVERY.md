@@ -12,12 +12,12 @@
 
 | 项 | 申报书（2026-10-19） | 现在 |
 |---|---|---|
-| 版本 | 0.1.3 | **0.1.13**（mooncakes 最新） |
-| 单测 | 36 | **84**（四个后端各 84） |
-| 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端** |
-| commits | 29 | 55 |
-| 包 | `svpwm/` `coord/` `angle/` | 增加 **`pi/`** |
-| 示例 | `examples/demo` | 增加 **`examples/waveform`**、**`examples/reject_demo`** |
+| 版本 | 0.1.3 | **0.1.13**（mooncakes 最新；本轮本地改动未发布） |
+| 单测 | 36 | **95**（四个后端各 95） |
+| 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端**（wasm 仅本机实测，未进 CI 矩阵） |
+| commits | 29 | 以仓库 git log 为准 |
+| 包 | `svpwm/` `coord/` `angle/` | 增加 **`pi/`**、**`controller/`**、**`motor/`** |
+| 示例 | `examples/demo` | 增加 **`examples/waveform`**、**`examples/reject_demo`**、**`examples/foc_sim`** |
 | CI | check/build/test（wasm-gc）+ native/js 本地实测 | 三目标矩阵 `check --deny-warn` + build + test，示例真跑，发布元数据校验 |
 
 ## 二、申报之后新增了什么
@@ -33,6 +33,11 @@
    输入校验 `check_inputs` 与 `duties_checked`。
 3. **角度反解**：`electrical_to_mechanical`（周期意义下的逆）。
 4. **可运行的两类新示例**：波形报告（ASCII 七段式时序）与拒绝演示（非法输入）。
+5. **`controller/` 电流环控制器对象**：采样 → Clarke → Park → d/q 双 PI → 反 Park →
+   SVPWM 逐拍串成一条链，内部保存观测值与电压指令；闭环阶跃跟踪、限幅、抗饱和
+   都有回归测试锁住。
+6. **`motor/` 简化 PMSM 电气模型**：R / Ld / Lq / ψf / 极对数参数化，一阶欧拉积分，
+   供 `examples/foc_sim` 跑离线时域步进；模型不生成转速环。
 
 ## 三、与申报书不符、需要主动说明的两处
 
@@ -49,6 +54,7 @@ moon test --target wasm                    # 84/84
 moon run examples/demo --target native     # 变换与占空比数值
 moon run examples/waveform --target native # 七段式时序图
 moon run examples/reject_demo --target native  # 每条拒绝路径
+moon run examples/foc_sim --target native  # 电流环闭环阶跃跟踪
 ```
 
 - 期望值**不取自本库输出**：`scripts/gen_fixtures.py` 用 Python 按教材公式独立算 20 组
@@ -63,5 +69,10 @@ moon run examples/reject_demo --target native  # 每条拒绝路径
 
 ## 六、当前边界（不做的事，仍然是这些）
 
-dq 动态模型与闭环整定、旋变 / 霍尔信号解析、C FFI、芯片厂商 SDK 绑定、GUI 与波形显示、
-硬件在环。新增的 `pi/` 不改变这条边界。
+转速环、dq 解耦补偿、无感观测器、旋变 / 霍尔信号解析、C FFI、芯片厂商 SDK 绑定、
+GUI 与波形显示、硬件在环。`controller/` 只做电流环单拍链路，`motor/` 是离线简化模型，
+两者都不改变这条边界。
+
+> 与申报书「明确不做 dq 动态模型与闭环整定」的关系：本轮新增的是离线仿真用的一阶
+> 简化被控对象与 d/q 电流环，不含转速环、不含参数整定方法；这条判断随代码一起保留，
+> 复核时以仓库实际实现为准。

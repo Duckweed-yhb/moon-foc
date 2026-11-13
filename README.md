@@ -4,7 +4,7 @@
 
 MoonBit 实现的 PMSM SVPWM 调制与坐标变换数值内核。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），外加 Clarke / Park / 反 Park 变换，以及机械角度到电角度的换算。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、77 个用例全过、`check --deny-warn` 干净。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象与离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、95 个用例全过、`check --deny-warn` 干净。
 
 ## 安装
 
@@ -106,9 +106,33 @@ iq_pi.reset()                                              // 切模式 / 重新
 - 非有限误差（NaN / Inf）不进入状态，返回当前积分项的限幅值——坏采样不会污染调节器。
 - `dt <= 0` 按 0 处理，退化成纯 P。
 
+## 电流环控制器与简化电机模型
+
+`controller/` 把现有环节串成一个逐拍调用的对象：采样三相电流 → Clarke → Park → d/q 双 PI → 反 Park → SVPWM，返回观测 d/q 电流、d/q 电压指令与三相占空比。坐标变换、PI、调制都复用前面的包，本包只做链路编排与内部状态保存。
+
+```moon
+let ctrl = @controller.FocController::new(
+  2.0, 1000.0,   // d 轴 kp / ki
+  2.0, 1000.0,   // q 轴 kp / ki
+  1.0e-4, 24.0,  // Ts / Vdc
+  -12.0, 12.0,   // 电压指令限幅
+)
+let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref)
+```
+
+- 任一采样输入非有限时不进 PI 状态，观测值与占空比一并返回零；`reset()` 清空 d/q 两侧积分器。
+- `motor/` 是离线仿真用的简化 PMSM 模型：R、Ld、Lq、ψf、极对数参数化，d/q 一阶方程显式欧拉积分，电角速度外部给定（模型本身不生成转速环）。
+- `examples/foc_sim` 在这个简化模型上跑电流环时域步进：静止、iq 给定 2.0 A、id 给定 0 A，可直接看到跟踪轨迹。
+
+```
+moon run examples/foc_sim --target native
+```
+
+已实现并验证的边界：电流环 d/q 跟踪、电压限幅、PI 抗饱和、简化模型一阶动态。仍未实现（计划外）：转速环、dq 解耦补偿、无感观测器、真实 I/O 与 FFI。
+
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-12 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 84 passed / 0 failed，四个目标 `moon check --deny-warn` 与 `moon build` 全部干净退出。
+CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-13 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 95 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -120,7 +144,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-77 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，以及 20 组独立数值夹具，其期望值由库外独立算出。
+95 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，以及简化电机模型的零电压保持、RL 一阶上升、极对数换算与三相电流和为零。
 
 ## 独立数值夹具
 
