@@ -15,7 +15,7 @@
 | 版本 | 0.1.3 | **0.1.13**（mooncakes 最新；本轮本地改动未发布） |
 | 单测 | 36 | **95**（四个后端各 95） |
 | 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端**（wasm 仅本机实测，未进 CI 矩阵） |
-| commits | 29 | 60（本地 main，领先 origin 4 个，未推送） |
+| commits | 29 | 60（本地 main，领先 origin 5 个，未推送） |
 | 包 | `svpwm/` `coord/` `angle/` | 增加 **`pi/`**、**`controller/`**、**`motor/`** |
 | 示例 | `examples/demo` | 增加 **`examples/waveform`**、**`examples/reject_demo`**、**`examples/foc_sim`** |
 | CI | check/build/test（wasm-gc）+ native/js 本地实测 | 三目标矩阵 `check --deny-warn` + build + test，示例真跑，发布元数据校验 |
