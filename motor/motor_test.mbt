@@ -81,3 +81,23 @@ test "non finite voltage or non positive dt keeps the state" {
   assert_true(near(m.id(), id0))
   assert_true(near(m.iq(), iq0))
 }
+
+///|
+/// 极对数非正没有物理意义：构造时钳到 1，电角速度按 1 换算，不出现 0 或负倍数。
+test "non positive pole pairs are clamped to one" {
+  let zero = @motor.PmsmModel::new(0.5, 0.001, 0.001, 0.05, 0, 0.0)
+  zero.set_speed(100.0)
+  assert_true(near(zero.omega_e(), 100.0))
+  let neg = @motor.PmsmModel::new(0.5, 0.001, 0.001, 0.05, -3, 0.0)
+  neg.set_speed(100.0)
+  assert_true(near(neg.omega_e(), 100.0))
+}
+
+///|
+/// 电感非正会让欧拉步进除零：构造时夹到 1e-9 H，步进后电流仍是有限值，不出现 NaN / Inf。
+test "non positive inductance is clamped above zero" {
+  let m = @motor.PmsmModel::new(0.5, 0.0, -1.0e-6, 0.05, 4, 0.0)
+  m.step(1.0, 1.0, 1.0e-4)
+  assert_true(m.id() == m.id() && m.id().abs() <= 1.0e308)
+  assert_true(m.iq() == m.iq() && m.iq().abs() <= 1.0e308)
+}
