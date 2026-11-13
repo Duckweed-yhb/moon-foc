@@ -1,0 +1,13 @@
+///|
+/// examples/foc_sim — 简化 PMSM 模型上的 FOC 电流环时域仿真。
+///
+/// 每拍：模型出三相电流 → controller 走完 Clarke/Park/双 PI/反 Park/SVPWM
+/// → 电压指令回灌模型。打印若干采样点的 d/q 电流与稳态结果。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+}
