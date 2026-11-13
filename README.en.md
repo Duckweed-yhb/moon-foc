@@ -11,7 +11,7 @@ Park / inverse-Park transforms, angle conversion, a `controller/` closed
 current-loop object and a simplified `motor/` electrical model for offline
 simulation. No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104:
 wasm, wasm-gc, js and native all build, run the demo and pass `moon test`
-(95/95 on each), with `moon check --deny-warn` clean on all four targets.
+(97/97 on each), with `moon check --deny-warn` clean on all four targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
 and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
@@ -96,7 +96,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-13
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 95 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 97 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -112,14 +112,14 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-95 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+97 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
 order, angle normalization, 20 independent numeric fixtures, single-axis PI
 proportional/integral/clamp/anti-windup, controller chain consistency and
 closed-loop step tracking, and the simplified motor model's first-order RL
-response, pole-pair scaling and zero three-phase sum.
+response, pole-pair scaling, zero three-phase sum, and clamping of non-positive pole pairs and inductance.
 
 ## Independent numeric fixtures
 
