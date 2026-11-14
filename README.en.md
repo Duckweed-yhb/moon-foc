@@ -13,7 +13,7 @@ target bandwidth into PI gains, two-phase current sampling (third-phase
 reconstruction plus ADC sample-window checks), and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (125/125 on each), with `moon check --deny-warn` clean on all four
+`moon test` (133/133 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -101,9 +101,10 @@ let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref
 moon run examples/foc_sim --target native
 ```
 
-Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup, and
-the first-order dynamics of the simplified model. Not implemented (out of plan):
-speed loop, d/q decoupling compensation, sensorless observer, real I/O and FFI.
+Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup,
+the first-order dynamics of the simplified model, and model-based decoupling
+feedforward. Not implemented (out of plan): speed loop, parameter identification,
+sensorless observer, real I/O and FFI.
 
 ### Current-loop design
 
@@ -141,6 +142,42 @@ steady-state error of 2.2e-16 at 0.2 s.
 ```
 moon run examples/design_report --target native
 ```
+
+### Decoupling feedforward
+
+The d and q axes are not independent in the rotating frame: `vd` carries
+`−ωe·Lq·iq`, `vq` carries `ωe·(Ld·id + ψf)`. Both are disturbances from the PI's
+point of view, and the faster the rotor turns the harder it is for the integrator
+to grow them. `controller/feedforward.mbt` computes them from the motor data and
+adds them before the voltage clamp:
+
+```moon
+let (vd_ff, vq_ff) = @controller.decoupling_terms(omega_e, ld, lq, psi_f, id, iq)
+// ωe=400, Lq=1.2 mH, iq=5 A → vd_ff = -2.4 V
+// Ld·id + ψf = 0.0524 Wb → vq_ff = 20.96 V
+let (vd, vq) = @controller.apply_feedforward(vd_pi, vq_pi, vd_ff, vq_ff, 48.0)
+```
+
+`apply_feedforward` limits the magnitude of the combined vector
+`sqrt(vd²+vq²)` to `Vdc/√3`, the same linear-region boundary `svpwm` uses. When the
+sum exceeds it, both components are scaled by one factor so the direction is
+preserved; clamping `vd` and `vq` separately would rotate the reference. A non-positive
+or non-finite `vdc` disables the clamp and only sums, and non-finite components
+return `(0, 0)` instead of injecting NaN.
+
+`examples/feedforward_loop` runs the two variants side by side with identical
+parameters and gains (iq step 0 → 5 A, Vdc 48 V, Ts 10 µs, PI tuned to 400 Hz).
+Native local run (2026-11-14): at ωe=200 the time to enter the ±2 % band drops from
+5.95 ms to 1.5 ms and the peak deviation from 4.999 A to 4.9157 A; at ωe=400 from
+6.99 ms to 1.51 ms and 7.0343 A to 4.9357 A; at ωe=480 from 7.25 ms to 2.58 ms and
+8.1312 A to 4.9691 A. All runs converge to 5 A at the end because the PI integrator
+gives zero steady-state error anyway; the difference is entirely in the transient,
+where the plain loop first has to integrate the back-EMF and overshoots on the way.
+
+Limits: the feedforward uses nameplate model parameters, so any mismatch in
+`Ld`/`Lq`/`ψf` shows up as residual error. There is no parameter identification,
+no current prediction, and no dead-time term here; the module removes only these
+two known disturbances.
 
 ### Current sampling
 
@@ -199,7 +236,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 125 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 133 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -215,7 +252,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-125 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+133 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -231,7 +268,7 @@ never crosses 0 dB), plus 12 regressions on current sampling (reconstruction clo
 the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
 check including invalid tolerances, window margin as duty and period vary, invalid
 window configuration rejected, sample-pair ranking, no candidate when all phases
-are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond).
+are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond), plus 8 regressions on decoupling feedforward (back-EMF equal to ωe·ψf with zero speed and non-finite inputs degrading to zero, zero feedforward at standstill, the signs of the voltage equation including a negative vq shift when id is negative, a linear-region sum returned untouched, a magnitude clamp that keeps the direction, a bus-unknown case that only sums, and non-finite components kept out of the command).
 
 ## Independent numeric fixtures
 

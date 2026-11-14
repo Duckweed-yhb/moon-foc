@@ -6,6 +6,21 @@
 
 ### Added
 
+- `controller/feedforward.mbt`：d/q 解耦前馈与电压矢量限幅。`decoupling_terms` 按电压方程
+  `vd = R·id + Ld·did/dt − ωe·Lq·iq`、`vq = R·iq + Lq·diq/dt + ωe·(Ld·id + ψf)` 给出
+  `(−ωe·Lq·iq, ωe·(Ld·id + ψf))`；`back_emf_voltage` 单独给 `ωe·ψf`；`apply_feedforward`
+  把 PI 输出与前馈相加，按合成矢量幅值 `sqrt(vd²+vq²)` 限到 `Vdc/√3`，超限时等比缩放两个
+  分量以保持方向（逐轴钳位会改掉矢量角度）；`vdc` 非正或非有限时不限幅，只相加。
+  非有限分量一律返回零，不把 NaN 加进电压指令。补 8 条回归：反电动势换算与零速 / 非有限
+  输入归零、零速前馈为零、前馈项符号（含 id 为负时 vq_ff 下调）、线性区相加原样返回、
+  超限只缩幅值不改方向、母线未知只相加、非有限分量不进指令。
+- `examples/feedforward_loop`：加与不加前馈并排跑同一个起步过程（iq 0 → 5 A，Vdc 48 V，
+  Ts 10 µs，PI 按 400 Hz 整定），打印进入 ±2% 带的时间与最大偏差。本机 native 实测：
+  ωe=200 时 5.95 ms → 1.5 ms、最大偏差 4.999 A → 4.9157 A；ωe=400 时 6.99 ms → 1.51 ms、
+  7.0343 A → 4.9357 A；ωe=480 时 7.25 ms → 2.58 ms、8.1312 A → 4.9691 A。末拍都收敛到 5 A，
+  PI 积分本来就会消掉稳态误差，差别在瞬态。
+- 测试数 125 → 133。
+
 - `controller/`：逐拍调用的 FOC 电流环控制器对象 `FocController`，链路为
   采样电流 → Clarke → Park → d/q 双 PI → 反 Park → SVPWM；复用 coord / pi / svpwm，
   内部保存上一拍观测值与电压指令；非有限采样不进 PI 状态，`reset()` 清空两侧积分器。
