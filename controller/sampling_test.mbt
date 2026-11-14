@@ -112,3 +112,93 @@ test "two-phase step matches the three-phase controller" {
   assert_true(close(a6, b6, 1.0e-12))
   assert_true(close(a7, b7, 1.0e-12))
 }
+
+///|
+test "pair currents place the measured values on the named phases" {
+  // pair (0,2)：a、c 实测，b 重构。
+  let (ia, ib, ic) = @controller.pair_currents((0, 2), 1.5, -0.7)
+  assert_true(close(ia, 1.5, 1.0e-12))
+  assert_true(close(ic, -0.7, 1.0e-12))
+  assert_true(close(ib, -0.8, 1.0e-12))
+  // pair (1,2)：b、c 实测，a 重构。
+  let (ja, jb, jc) = @controller.pair_currents((1, 2), 0.9, 0.4)
+  assert_true(close(jb, 0.9, 1.0e-12))
+  assert_true(close(jc, 0.4, 1.0e-12))
+  assert_true(close(ja, -1.3, 1.0e-12))
+  // 还原后三相仍满足和为零。
+  assert_true(@controller.currents_consistent(ia, ib, ic, 1.0e-12))
+  assert_true(@controller.currents_consistent(ja, jb, jc, 1.0e-12))
+}
+
+///|
+test "pair currents reject a malformed pair or a bad sample" {
+  // 相号越界、两相相同都当成坏采样，返回全零而不是猜一个相。
+  let (a1, b1, c1) = @controller.pair_currents((0, 3), 1.0, 2.0)
+  assert_true(close(a1, 0.0, 1.0e-12))
+  assert_true(close(b1, 0.0, 1.0e-12))
+  assert_true(close(c1, 0.0, 1.0e-12))
+  let (a2, b2, c2) = @controller.pair_currents((1, 1), 1.0, 2.0)
+  assert_true(close(a2 + b2 + c2, 0.0, 1.0e-12))
+  assert_true(close(b2, 0.0, 1.0e-12))
+  // 任一路 NaN 也让整组作废。
+  let (a3, _, _) = @controller.pair_currents(
+    (0, 1),
+    1.0 / 0.0 - 1.0 / 0.0,
+    -0.5,
+  )
+  assert_true(close(a3, 0.0, 1.0e-12))
+}
+
+///|
+fn measured_for_pair(
+  pair : (Int32, Int32),
+  ia : Double,
+  ib : Double,
+  ic : Double,
+) -> (Double, Double) {
+  let (p, q) = pair
+  let v1 = if p == 0 { ia } else if p == 1 { ib } else { ic }
+  let v2 = if q == 0 { ia } else if q == 1 { ib } else { ic }
+  (v1, v2)
+}
+
+///|
+test "step from pair matches the three-phase controller for any pair" {
+  let theta = 0.35
+  let ia = 1.1
+  let ib = -0.25
+  let ic = -ia - ib
+  for pair in [(0, 1), (0, 2), (1, 2)] {
+    let c1 = @controller.FocController::new(
+      0.5, 20.0, 0.5, 20.0, 50.0e-6, 48.0, -24.0, 24.0,
+    )
+    let c2 = @controller.FocController::new(
+      0.5, 20.0, 0.5, 20.0, 50.0e-6, 48.0, -24.0, 24.0,
+    )
+    let (f1, f2, _, _, f5, f6, f7) = c1.step(ia, ib, ic, theta, 0.0, 2.0)
+    let (ma, mb) = measured_for_pair(pair, ia, ib, ic)
+    let (t1, t2, _, _, t5, t6, t7) = c2.step_from_pair(
+      pair, ma, mb, theta, 0.0, 2.0,
+    )
+    assert_true(close(f1, t1, 1.0e-12))
+    assert_true(close(f2, t2, 1.0e-12))
+    assert_true(close(f5, t5, 1.0e-12))
+    assert_true(close(f6, t6, 1.0e-12))
+    assert_true(close(f7, t7, 1.0e-12))
+  }
+}
+
+///|
+test "step from pair leaves the controller untouched on a bad pair" {
+  let c = @controller.FocController::new(
+    0.5, 20.0, 0.5, 20.0, 50.0e-6, 48.0, -24.0, 24.0,
+  )
+  let _ = c.step(1.2, -0.4, -0.8, 0.7, 0.0, 2.0)
+  let before = c.q_integral()
+  let out = c.step_from_pair((0, 0), 1.2, -0.4, 0.7, 0.0, 2.0)
+  let (o1, o2, _, _, o5, _, _) = out
+  assert_true(close(o1, 0.0, 1.0e-12))
+  assert_true(close(o2, 0.0, 1.0e-12))
+  assert_true(close(o5, 0.0, 1.0e-12))
+  assert_true(close(c.q_integral(), before, 1.0e-12))
+}

@@ -124,6 +124,80 @@ pub fn pick_sample_pair(
 }
 
 ///|
+/// 把「按相号顺序给出的两路采样」还原成 a/b/c 三相电流。
+///
+/// `pair` 为 `pick_sample_pair` 给出的下标对（a=0、b=1、c=2），`i_first` /
+/// `i_second` 依次对应 `pair.0` 与 `pair.1` 两相，第三相由
+/// `ic = -ia - ib` 重构。相号非法（越界、两相相同）或采样非有限时返回
+/// 全零，交由 `FocController::step` 的坏采样分支处理。
+pub fn pair_currents(
+  pair : (Int32, Int32),
+  i_first : Double,
+  i_second : Double,
+) -> (Double, Double, Double) {
+  let (p, q) = pair
+  if p < 0 || p > 2 || q < 0 || q > 2 || p == q {
+    return (0.0, 0.0, 0.0)
+  }
+  if !(finite(i_first) && finite(i_second)) {
+    return (0.0, 0.0, 0.0)
+  }
+  let mut ia = 0.0
+  let mut ib = 0.0
+  let mut ic = 0.0
+  if p == 0 {
+    ia = i_first
+  } else if p == 1 {
+    ib = i_first
+  } else {
+    ic = i_first
+  }
+  if q == 0 {
+    ia = i_second
+  } else if q == 1 {
+    ib = i_second
+  } else {
+    ic = i_second
+  }
+  let missing = 3 - p - q
+  if missing == 0 {
+    ia = -ib - ic
+  } else if missing == 1 {
+    ib = -ia - ic
+  } else {
+    ic = -ia - ib
+  }
+  (ia, ib, ic)
+}
+
+///|
+/// 用任意一对相采样驱动一拍电流环。与 `step_from_two_phases` 的区别是采样
+/// 相不固定为 a/b：单电阻采样在每拍按窗口挑相，挑到哪两相就把哪两相交给
+/// 这里，内部按相号还原三相后调用 `step`。
+pub fn FocController::step_from_pair(
+  self : FocController,
+  pair : (Int32, Int32),
+  i_first : Double,
+  i_second : Double,
+  theta_e : Double,
+  id_ref : Double,
+  iq_ref : Double,
+) -> (Double, Double, Double, Double, Double, Double, Double) {
+  // 坏相号或坏采样在这里就挡住，不能交给 `step` 走「零电流」分支：那一支
+  // 只拦非有限输入，全零是合法测量值，会带着上一拍的积分继续算，等于把
+  // 一次坏采样当成「电流真的掉到 0」。
+  let (p, q) = pair
+  if p < 0 || p > 2 || q < 0 || q > 2 || p == q {
+    return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  }
+  if !(finite(i_first) && finite(i_second)) {
+    return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  }
+  let (ia, ib, ic) = pair_currents(pair, i_first, i_second)
+  self.step(ia, ib, ic, theta_e, id_ref, iq_ref)
+}
+
+///|
 /// 用两相采样驱动一拍电流环：内部重构第三相后调用 `FocController::step`。
 /// 采样相由调用方按 `pick_sample_pair` 的结果给定，这里不做隐式挑选，
 /// 避免把「这次采样该不该信」的决策藏在控制器里。
