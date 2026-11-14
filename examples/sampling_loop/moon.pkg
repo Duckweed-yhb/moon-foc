@@ -1,0 +1,10 @@
+///|
+/// examples/sampling_loop — 两相采样闭环：只有两路电流进控制器，第三相重构，采样相按窗口挑。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+}
