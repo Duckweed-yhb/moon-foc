@@ -239,17 +239,22 @@ moon run examples/sampling_loop --target native
 
 ## 浏览器演示（`docs/demo`）
 
-`examples/web_demo` 把闭环仿真算成 JSON 行打印到控制台（`META` 一行整定读数、`DATA` 每行一个面板），`docs/demo/index.html` 截获这些行后画成曲线。页面里的每个数都由 `controller/` 与 `motor/` 的函数产生，JS 里不重写模型。
+`examples/web_demo` 把整条参数网格算成 JSON 行打印到控制台（`META` 一行整定读数、`DATA` 每行一个面板），`docs/demo/index.html` 截获这些行后画成曲线并配参数滑块。页面里的每个数都由 `controller/` 与 `motor/` 的函数产生，JS 里不重写模型。
 
-三个面板：电流环阶跃（200 / 400 / 800 Hz 三种整定同图对比）、速度环 0 → 100 rad/s 并在 1.0 s 加 1 N·m 负载、弱磁给定随电角速度 300 → 900 rad/s 变化（iq 取 2 / 5 / 8 A，另附一条 id 下限 −8 A 的对比线）。
+参数面板走的是预计算网格：构建时把每一档都跑完，滑块只切档，不在浏览器里实时求解。这么做有实测依据 - MoonBit 的 js 产物是一整段 IIFE，`export` 计数为 0，函数名被 mangle 且闭在 IIFE 内；wasm-gc 产物的 `WebAssembly.Module.exports` 也只给出 `_start`。页面因此拿不到可调用的句柄，实时求解这条路在纯静态页上不成立。
+
+三组滑块：
+
+- 电流环带宽 100 → 1000 Hz，19 档（步 50 Hz）。每档一份 `design_current_loop` 的整定读数（Kp、Ki、相角裕度、计延时裕度），外加 240 拍闭环阶跃响应（iq 给定 0 → 5 A，dt 0.1 ms）。图上另画 200 / 400 / 800 Hz 三条参考线。
+- 速度环负载 0.5 → 2.5 N·m，5 档（步 0.5）。每档 20000 拍，转速与 iq 两张图共用同一个滑块。2.5 N·m 这一档超过 iq 8 A 对应的转矩能力（约 2.4 N·m），转速在负载投入后持续下滑，读数按超限用橙色标注。
+- 弱磁 iq 2 → 8 A，7 档（步 1 A）。每档给出 id 给定与电压余量随电角速度 300 → 900 rad/s 的曲线，另附一条 iq = 5 A、id 下限 −8 A 的对比线。基速由余量过零点线性插值得到。
 
 ```
 pwsh -File scripts/build-demo.ps1      # 构建 js 产物并复制到 docs/demo
 python -m http.server 8765             # 仓库根目录执行，然后打开 http://127.0.0.1:8765/docs/demo/
 ```
 
-产物与页面同目录且不依赖 CDN，直接双击 `docs/demo/index.html` 也能看。页面是静态的：工况写死在 `examples/web_demo/main.mbt` 里，要看别的参数得改源文件重跑脚本；GitHub Pages 托管需要在仓库设置里把 `docs/` 设为发布源，这一步不在仓库内。
-
+产物与页面同目录且不依赖 CDN，直接双击 `docs/demo/index.html` 也能看。全量网格在 node 下跑完约 127 ms，页面加载没有可感知的等待。档数写在 `examples/web_demo/main.mbt` 的扫掠范围和页面的滑块范围两处，改档数要同时改。GitHub Pages 托管需要在仓库设置里把 `docs/` 设为发布源，这一步不在仓库内。
 ## 测试
 
 CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 151 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。

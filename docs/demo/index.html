@@ -47,6 +47,39 @@
   canvas { display: block; width: 100%; height: 230px; }
   canvas.short { height: 180px; }
   .cap { color: var(--muted); font-size: 12px; margin: 6px 2px 4px; }
+  .ctrl {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 8px 10px; margin: 4px 0 10px;
+    background: #11151c; border: 1px solid var(--line); border-radius: 9px;
+  }
+  .ctrl label { color: var(--muted); font-size: 12px; }
+  .ctrl input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1 1 240px; min-width: 180px; height: 44px; background: transparent; margin: 0;
+  }
+  .ctrl input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; background: #2b3242; border-radius: 2px;
+  }
+  .ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; margin-top: -8px; border-radius: 50%;
+    background: var(--cyan); border: 0; cursor: pointer;
+  }
+  .ctrl input[type=range]::-moz-range-track { height: 4px; background: #2b3242; border-radius: 2px; }
+  .ctrl input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--cyan); border: 0; cursor: pointer;
+  }
+  .ctrl .val { font: 600 14px/1 ui-monospace, Consolas, monospace; color: var(--cyan); min-width: 74px; text-align: right; }
+  .ctrl .tag {
+    font-size: 11px; color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 9px;
+  }
+  .readouts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .ro { flex: 1 1 120px; background: #11151c; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  .ro .k { color: var(--muted); font-size: 11.5px; }
+  .ro .v { font: 600 15px/1.35 ui-monospace, Consolas, monospace; color: var(--text); }
+  .ro .u { color: var(--muted); font-size: 11.5px; font-weight: 400; }
+  .ro.warn .v { color: var(--orange); }
   footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
   footer code { color: var(--text); }
 </style>
@@ -56,7 +89,9 @@
   <h1>moon-foc 浏览器演示</h1>
   <p class="sub">
     曲线不是截图，是页面加载时由 <code>web_demo.js</code>（MoonBit js 后端产物）逐拍算出来的：
-    电流环 PI、速度 PI、机械方程、弱磁给定都来自库里的同一个函数。
+    电流环 PI、速度 PI、机械方程、弱磁给定都来自库里的同一个函数。<br>
+    参数面板用的是<strong>预计算网格</strong> - 构建时把每一档都算完，滑块只切档，不在浏览器里实时求解
+    （MoonBit 的 js 产物没有向外导出函数，页面拿不到句柄）。滑块选中的那一档就是库按那组参数跑出来的原样结果。
   </p>
 
   <div class="cards" id="stats"></div>
@@ -65,15 +100,21 @@
     <div class="card">
       <div class="hd">
         <h2>电流环阶跃响应</h2>
-        <span class="note">iq 给定 0 → 5 A，三种整定带宽，dt = 0.1 ms</span>
+        <span class="note">iq 给定 0 → 5 A，电机静止，dt = 0.1 ms</span>
         <div class="legend">
-          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>200 Hz</span>
-          <span style="color:#f6ad55"><i style="background:#f6ad55"></i>400 Hz</span>
-          <span style="color:#63b3ed"><i style="background:#63b3ed"></i>800 Hz</span>
+          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>当前档</span>
+          <span style="color:#7d8798"><i style="background:#7d8798"></i>200 / 400 / 800 Hz 参考</span>
         </div>
       </div>
+      <div class="ctrl">
+        <label for="s-bw">整定带宽</label>
+        <input id="s-bw" type="range" min="100" max="1000" step="50" value="400">
+        <span class="val" id="v-bw">400 Hz</span>
+        <span class="tag">19 档 · 预计算</span>
+      </div>
+      <div class="readouts" id="r-bw"></div>
       <canvas id="cv-current"></canvas>
-      <p class="cap">带宽越高上升越快，代价是延时引起的相位损失变大；三次整定的交叉频率与相角裕度见上方读数。</p>
+      <p class="cap">带宽越高上升越快，代价是计算延时的相位损失变大：计延时裕度从 100 Hz 的 86.4° 一路掉到 1000 Hz 的 54°。</p>
     </div>
   </section>
 
@@ -81,12 +122,19 @@
     <div class="card">
       <div class="hd">
         <h2>速度环：转速跟踪</h2>
-        <span class="note">0 → 100 rad/s，1.0 s 时加 1 N·m 负载</span>
+        <span class="note">0 → 100 rad/s，1.0 s 时加负载</span>
         <div class="legend">
           <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>机械角速度</span>
           <span style="color:#f6ad55"><i class="dash" style="color:#f6ad55"></i>负载投入时刻</span>
         </div>
       </div>
+      <div class="ctrl">
+        <label for="s-load">负载转矩</label>
+        <input id="s-load" type="range" min="0" max="4" step="1" value="1">
+        <span class="val" id="v-load">1 N·m</span>
+        <span class="tag">5 档 · 预计算</span>
+      </div>
+      <div class="readouts" id="r-load"></div>
       <canvas id="cv-speed"></canvas>
       <p class="cap">级联结构：速度 PI 出 iq 给定，电流 PI 出 d/q 电压（只补反电动势前馈），电气模型步进后算电磁转矩，再推进机械方程。</p>
     </div>
@@ -100,7 +148,7 @@
         </div>
       </div>
       <canvas id="cv-iq" class="short"></canvas>
-      <p class="cap">启动段 iq 顶到限幅，进入稳态后落到 3.5 A 附近——1 N·m 负载除以 Kt = 0.3 N·m/A，再加上阻尼项。</p>
+      <p class="cap">启动段 iq 顶到限幅，进入稳态后落在 3.5 A 附近（1 N·m 负载）：Kt = 0.3 N·m/A，再加上阻尼项。负载拉到最大档时 iq 一直贴着 8 A 也补不上转矩，转速会一路滑下去。</p>
     </div>
   </section>
 
@@ -108,41 +156,47 @@
     <div class="card">
       <div class="hd">
         <h2>弱磁：d 轴电流给定</h2>
-        <span class="note">iq 取 2 / 5 / 8 A，Vmax = Vdc/√3 = 27.7128 V</span>
+        <span class="note">Vmax = Vdc/√3 = 27.7128 V，id 下限 −30 A</span>
         <div class="legend">
-          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>iq = 2 A</span>
-          <span style="color:#f6ad55"><i style="background:#f6ad55"></i>iq = 5 A</span>
-          <span style="color:#63b3ed"><i style="background:#63b3ed"></i>iq = 8 A</span>
+          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>当前 iq 档</span>
           <span style="color:#7d8798"><i class="dash" style="color:#7d8798"></i>iq = 5 A，id 下限 −8 A</span>
         </div>
       </div>
+      <div class="ctrl">
+        <label for="s-iq">q 轴电流</label>
+        <input id="s-iq" type="range" min="2" max="8" step="1" value="5">
+        <span class="val" id="v-iq">5 A</span>
+        <span class="tag">7 档 · 预计算</span>
+      </div>
+      <div class="readouts" id="r-iq"></div>
       <canvas id="cv-field"></canvas>
-      <p class="cap">电压余量转负之后 id 才往负走；虚线是把 id 下限收到 −8 A 的同一条曲线，用来看出限幅确实在起作用。</p>
+      <p class="cap">电压余量转负之后 id 才往负走；虚线是把 id 下限收到 −8 A 的同一条曲线（iq = 5 A），用来看出限幅确实在起作用。</p>
     </div>
     <div class="card">
       <div class="hd">
         <h2>弱磁：电压余量</h2>
-        <span class="note">flux_headroom，单位韦伯，iq = 5 A</span>
+        <span class="note">flux_headroom，单位韦伯，跟随上方 iq 档</span>
         <div class="legend">
           <span style="color:#68d391"><i style="background:#68d391"></i>余量</span>
         </div>
       </div>
       <canvas id="cv-head" class="short"></canvas>
-      <p class="cap">余量过零的那一点就是基速；此前 id 保持 0，此后按 headroom / Ld 分配负 d 轴电流。</p>
+      <p class="cap">余量过零的那一点就是基速；此前 id 保持 0，此后按 headroom / Ld 分配负 d 轴电流。iq 越大，基速越低。</p>
     </div>
   </section>
 
   <footer>
     数据来源：<code>examples/web_demo</code> 用 <code>moon build --target js</code> 构建，
     产物 <code>web_demo.js</code> 与本页同目录。曲线与 README 里的读数同源，改库必须重新出图：
-    <code>pwsh scripts/build-demo.ps1</code>。
+    <code>pwsh scripts/build-demo.ps1</code>。参数网格的档数写在页面里，改档数要同时改
+    <code>main.mbt</code> 的扫掠范围和这里的滑块范围。
   </footer>
 </div>
 
 <script>
 /* 截获控制台输出：MoonBit 的 println 走 console.log，页面按前缀收数据。
    必须在加载 web_demo.js 之前完成。 */
-window.__focDemo = { meta: null, current: [], speed: null, field: [] };
+window.__focDemo = { meta: null, cur: null, speed: null, field: null };
 (function () {
   var raw = console.log;
   console.log = function () {
@@ -152,9 +206,7 @@ window.__focDemo = { meta: null, current: [], speed: null, field: [] };
         window.__focDemo.meta = JSON.parse(text.slice(5));
       } else if (text.indexOf("DATA ") === 0) {
         var obj = JSON.parse(text.slice(5));
-        if (obj.panel === "speed") window.__focDemo.speed = obj;
-        else if (obj.panel === "current") window.__focDemo.current.push(obj);
-        else if (obj.panel === "field") window.__focDemo.field.push(obj);
+        window.__focDemo[obj.panel] = obj;
       }
     } catch (e) {
       /* 解析失败不影响页面其余部分 */
@@ -169,7 +221,7 @@ window.__focDemo = { meta: null, current: [], speed: null, field: [] };
   var D = window.__focDemo;
 
   function fmt(v) {
-    if (!v) return "0";
+    if (v === null || v === undefined) return "-";
     var a = Math.abs(v), s;
     if (a >= 1000) s = v.toFixed(0);
     else if (a >= 100) s = v.toFixed(1);
@@ -195,17 +247,18 @@ window.__focDemo = { meta: null, current: [], speed: null, field: [] };
 
   function chart(id, cfg) {
     var cv = document.getElementById(id);
+    if (!cv) return;
     var box = cv.getBoundingClientRect();
     var dpr = window.devicePixelRatio || 1;
     var w = Math.max(320, box.width);
-    var h = box.height;
+    var h = box.height || 230;
     cv.width = Math.round(w * dpr);
     cv.height = Math.round(h * dpr);
     var ctx = cv.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    var L = 54, R = 14, T = 12, B = 32;
+    var L = 54, R = 14, T = 12, B = 44;
     var pw = w - L - R, ph = h - T - B;
     var xs = cfg.xmin, xe = cfg.xmax, ys = cfg.ymin, ye = cfg.ymax;
     function px(x) { return L + (x - xs) / (xe - xs) * pw; }
@@ -308,44 +361,91 @@ window.__focDemo = { meta: null, current: [], speed: null, field: [] };
     return out;
   }
 
-  /* 顶部读数 */
+  function ro(host, items) {
+    var el = document.getElementById(host);
+    el.innerHTML = "";
+    items.forEach(function (it) {
+      var d = document.createElement("div");
+      d.className = "ro" + (it.warn ? " warn" : "");
+      d.innerHTML = '<div class="k">' + it.k + '</div><div class="v">' + it.v +
+        (it.u ? ' <span class="u">' + it.u + "</span>" : "") + "</div>";
+      el.appendChild(d);
+    });
+  }
+
+  /* 顶部固定读数 */
   var m = D.meta || {};
   var stats = [
-    ["电流环 Kp", m.kp, "V/A"],
-    ["电流环 Ki", m.ki, "V/(A·s)"],
-    ["交叉频率", m.crossover, "Hz"],
-    ["相角裕度", m.pm, "deg"],
-    ["计延时裕度", m.pm_delay, "deg"],
-    ["速度环 Kp", m.speed_kp, "A/(rad/s)"],
-    ["速度环 Ki", m.speed_ki, "A/rad"],
-    ["电压限幅", m.vlimit, "V"]
+    ["速度环 Kp", fmt(m.speed_kp), "A/(rad/s)"],
+    ["速度环 Ki", fmt(m.speed_ki), "A/rad"],
+    ["电压限幅", fmt(m.vlimit), "V"],
+    ["电流环步长", "0.1", "ms"]
   ];
   var host = document.getElementById("stats");
   stats.forEach(function (s) {
     var el = document.createElement("div");
     el.className = "stat";
-    el.innerHTML = '<div class="k">' + s[0] + '</div><div class="v">' +
-      (s[1] === undefined ? "-" : fmt(s[1]) + ' <span class="u">' + s[2] + "</span>") + "</div>";
+    el.innerHTML = '<div class="k">' + s[0] + '</div><div class="v">' + s[1] +
+      ' <span class="u">' + s[2] + "</span></div>";
     host.appendChild(el);
   });
 
-  var colors = { "200": "#4fd1c5", "400": "#f6ad55", "800": "#63b3ed" };
-  var cur = D.current || [];
-  chart("cv-current", {
-    xmin: 0, xmax: 0.02, ymin: 0, ymax: 6,
-    xlabel: "时间 / s", ylabel: "iq / A",
-    series: cur.map(function (p) {
-      return { color: colors[String(p.bw)] || "#63b3ed", points: pair(p.t, p.iq) };
-    })
-  });
+  /* 电流环：19 档带宽 */
+  var cu = D.cur;
+  var bwInput = document.getElementById("s-bw");
+  function drawCurrent() {
+    if (!cu) return;
+    var bw = parseInt(bwInput.value, 10);
+    var idx = Math.round((bw - cu.bw[0]) / (cu.bw[1] - cu.bw[0]));
+    if (idx < 0) idx = 0;
+    if (idx >= cu.bw.length) idx = cu.bw.length - 1;
+    document.getElementById("v-bw").textContent = cu.bw[idx] + " Hz";
+    var refs = [200, 400, 800].map(function (v) {
+      return cu.bw.indexOf(v);
+    }).filter(function (i) {
+      return i >= 0 && i !== idx;
+    });
+    ro("r-bw", [
+      { k: "Kp", v: fmt(cu.kp[idx]), u: "V/A" },
+      { k: "Ki", v: fmt(cu.ki[idx]), u: "V/(A·s)" },
+      { k: "相角裕度", v: fmt(cu.pm[idx]), u: "deg" },
+      { k: "计延时裕度", v: fmt(cu.pm_delay[idx]), u: "deg" },
+      { k: "电流峰值", v: fmt(Math.max.apply(null, cu.iq[idx])), u: "A" }
+    ]);
+    var series = refs.map(function (i) {
+      return { color: "#7d8798", width: 1.2, points: pair(cu.t, cu.iq[i]) };
+    });
+    series.push({ color: "#4fd1c5", width: 2, points: pair(cu.t, cu.iq[idx]) });
+    chart("cv-current", {
+      xmin: 0, xmax: 0.02, ymin: 0, ymax: 6,
+      xlabel: "时间 / s", ylabel: "iq / A",
+      series: series
+    });
+  }
+  bwInput.addEventListener("input", drawCurrent);
+  drawCurrent();
 
+  /* 速度环：5 档负载，两张图共用 */
   var sp = D.speed;
-  if (sp) {
+  var loadInput = document.getElementById("s-load");
+  function drawSpeed() {
+    if (!sp) return;
+    var idx = parseInt(loadInput.value, 10);
+    document.getElementById("v-load").textContent = sp.loads[idx] + " N·m";
+    var drop = sp.drops[idx];
+    var over = drop > 20;
+    ro("r-load", [
+      { k: "负载", v: fmt(sp.loads[idx]), u: "N·m" },
+      { k: "起步峰值", v: fmt(sp.peaks[idx]), u: "rad/s" },
+      { k: "负载后跌落", v: fmt(drop), u: "rad/s", warn: over },
+      { k: "末拍转速", v: fmt(sp.omega[idx][sp.omega[idx].length - 1]), u: "rad/s", warn: over },
+      { k: "末拍 iq", v: fmt(sp.iq[idx][sp.iq[idx].length - 1]), u: "A" }
+    ]);
     chart("cv-speed", {
       xmin: 0, xmax: 2, ymin: 0, ymax: 110,
       xlabel: "时间 / s", ylabel: "机械角速度 / rad·s⁻¹",
-      vlines: [{ x: sp.load_t, label: "加 1 N·m", color: "#f6ad55" }],
-      series: [{ color: "#4fd1c5", points: pair(sp.t, sp.omega) }]
+      vlines: [{ x: sp.load_t, label: "加 " + fmt(sp.loads[idx]) + " N·m", color: "#f6ad55" }],
+      series: [{ color: "#4fd1c5", points: pair(sp.t, sp.omega[idx]) }]
     });
     chart("cv-iq", {
       xmin: 0, xmax: 2, ymin: -9, ymax: 9,
@@ -355,37 +455,57 @@ window.__focDemo = { meta: null, current: [], speed: null, field: [] };
       series: [
         { color: "#7d8798", dash: true, width: 1.2, points: [[0, 8], [2, 8]] },
         { color: "#7d8798", dash: true, width: 1.2, points: [[0, -8], [2, -8]] },
-        { color: "#f6ad55", points: pair(sp.t, sp.iq) }
+        { color: "#f6ad55", points: pair(sp.t, sp.iq[idx]) }
       ]
     });
   }
+  loadInput.addEventListener("input", drawSpeed);
+  drawSpeed();
 
-  var fld = D.field || [];
-  var fieldColors = ["#4fd1c5", "#f6ad55", "#63b3ed"];
-  var natural = fld.filter(function (f) { return f.id_min <= -25; });
-  chart("cv-field", {
-    xmin: 300, xmax: 900, ymin: -30, ymax: 2,
-    xlabel: "电角速度 / rad·s⁻¹", ylabel: "id / A",
-    zero: true,
-    series: natural.map(function (p, i) {
-      return {
-        color: fieldColors[i] || "#63b3ed",
-        points: pair(p.omega_e, p.id)
-      };
-    }).concat(fld.filter(function (f) { return f.id_min > -25; }).map(function (p) {
-      return { color: "#7d8798", dash: true, width: 1.4, points: pair(p.omega_e, p.id) };
-    }))
-  });
-
-  var head5 = fld.filter(function (f) { return f.iq === 5 && f.id_min <= -25; })[0];
-  if (head5) {
+  /* 弱磁：7 档 iq，两张图共用 */
+  var fd = D.field;
+  var iqInput = document.getElementById("s-iq");
+  function baseSpeed(head) {
+    for (var i = 1; i < head.length; i++) {
+      if (head[i] <= 0 && head[i - 1] > 0) {
+        var t = head[i - 1] / (head[i - 1] - head[i]);
+        return fd.omega_e[i - 1] + t * (fd.omega_e[i] - fd.omega_e[i - 1]);
+      }
+    }
+    return null;
+  }
+  function drawField() {
+    if (!fd) return;
+    var iq = parseInt(iqInput.value, 10);
+    var idx = Math.round(iq - fd.iqs[0]);
+    if (idx < 0) idx = 0;
+    if (idx >= fd.iqs.length) idx = fd.iqs.length - 1;
+    document.getElementById("v-iq").textContent = fd.iqs[idx] + " A";
+    var bs = baseSpeed(fd.headroom[idx]);
+    ro("r-iq", [
+      { k: "当前 iq", v: fmt(fd.iqs[idx]), u: "A" },
+      { k: "id@900", v: fmt(fd.id[idx][fd.id[idx].length - 1]), u: "A" },
+      { k: "基速", v: bs === null ? "未触发" : fmt(bs), u: "rad/s" },
+      { k: "余量@900", v: fmt(fd.headroom[idx][fd.headroom[idx].length - 1]), u: "Wb" }
+    ]);
+    chart("cv-field", {
+      xmin: 300, xmax: 900, ymin: -30, ymax: 2,
+      xlabel: "电角速度 / rad·s⁻¹", ylabel: "id / A",
+      zero: true,
+      series: [
+        { color: "#7d8798", dash: true, width: 1.4, points: pair(fd.omega_e, fd.id_limited) },
+        { color: "#4fd1c5", width: 2, points: pair(fd.omega_e, fd.id[idx]) }
+      ]
+    });
     chart("cv-head", {
       xmin: 300, xmax: 900, ymin: -0.03, ymax: 0.05,
       xlabel: "电角速度 / rad·s⁻¹", ylabel: "余量 / Wb",
       zero: true,
-      series: [{ color: "#68d391", points: pair(head5.omega_e, head5.headroom) }]
+      series: [{ color: "#68d391", points: pair(fd.omega_e, fd.headroom[idx]) }]
     });
   }
+  iqInput.addEventListener("input", drawField);
+  drawField();
 })();
 </script>
 </body>

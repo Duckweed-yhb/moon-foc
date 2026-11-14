@@ -312,17 +312,22 @@ moon run examples/sampling_loop --target native
 
 ## Browser demo (`docs/demo`)
 
-`examples/web_demo` runs the closed-loop simulation and prints JSON lines to the console (one `META` line with design readouts, one `DATA` line per panel); `docs/demo/index.html` captures those lines and draws them. Every number on the page comes from a function in `controller/` or `motor/` - the JavaScript never re-derives the model.
+`examples/web_demo` evaluates a whole parameter grid and prints JSON lines to the console (one `META` line with design readouts, one `DATA` line per panel); `docs/demo/index.html` captures those lines, draws them, and adds parameter sliders. Every number on the page comes from a function in `controller/` or `motor/` - the JavaScript never re-derives the model.
 
-Three panels: current-loop step at three designs (200 / 400 / 800 Hz on one chart), speed loop from 0 to 100 rad/s with a 1 N m load applied at 1.0 s, and field-weakening current over 300 to 900 rad/s (iq = 2 / 5 / 8 A, plus one curve with the id lower bound clamped at -8 A).
+The panel uses a precomputed grid: the build evaluates every step, and the slider only switches between precomputed cases. This rests on two measurements - the MoonBit JS artifact is a single IIFE with zero `export`s, mangled function names closed inside it, and the wasm-gc artifact reports only `_start` from `WebAssembly.Module.exports`. The page therefore has no callable handle, so live recomputation is not available on a pure static page.
+
+Three slider groups:
+
+- Current-loop bandwidth from 100 to 1000 Hz in 19 steps of 50 Hz. Each step carries the `design_current_loop` readouts (Kp, Ki, phase margin, margin after delay) plus a 240-tick closed-loop step response (iq reference 0 to 5 A, dt 0.1 ms). Three fixed reference traces at 200 / 400 / 800 Hz stay on the chart.
+- Speed-loop load from 0.5 to 2.5 N m in 5 steps of 0.5. Each step runs 20000 ticks; speed and iq charts share the same slider. The 2.5 N m step exceeds the torque available at the 8 A iq limit (about 2.4 N m), so the speed keeps falling after the load is applied and the readouts flag it as out of range.
+- Field-weakening iq from 2 to 8 A in 7 steps of 1 A. Each step gives the id reference and the voltage headroom from 300 to 900 rad/s, plus one comparison trace at iq = 5 A with the id lower bound clamped at -8 A. The base speed is linearly interpolated where the headroom crosses zero.
 
 ```
 pwsh -File scripts/build-demo.ps1      # build the JS artifact and copy it into docs/demo
 python -m http.server 8765             # run from the repo root, then open http://127.0.0.1:8765/docs/demo/
 ```
 
-The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The page is static: the operating points are hard-coded in `examples/web_demo/main.mbt`, and other parameters require editing the source and re-running the script. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
-
+The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /

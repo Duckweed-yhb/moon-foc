@@ -78,13 +78,68 @@ function _M0TPB5ArrayGdE(param0, param1) {
   this.buf = param0;
   this.len = param1;
 }
+function _M0TPB5ArrayGsE(param0, param1) {
+  this.buf = param0;
+  this.len = param1;
+}
+function _M0TPB8MutLocalGbE(param0) {
+  this.val = param0;
+}
 const _M0FP092moonbitlang_2fcore_2fbuiltin_2fStringBuilder_24as_24_40moonbitlang_2fcore_2fbuiltin_2eLogger = { method_0: _M0IPB13StringBuilderPB6Logger13write__string, method_1: _M0IP016_24default__implPB6Logger16write__substringGRPB13StringBuilderE, method_2: _M0IPB13StringBuilderPB6Logger11write__view, method_3: _M0IPB13StringBuilderPB6Logger11write__char, method_4: _M0IP016_24default__implPB6Logger28write__string__interpolationGRPB13StringBuilderE, method_5: _M0IP016_24default__implPB6Logger5writeGRPB13StringBuilderE };
 const _M0FP38Duckweed10moon_2dfoc5angle7two__pi = 6.2831853071795862;
+function _M0MPC15array5Array6bufferGsE(self) {
+  return self.buf;
+}
 function _M0MPC15array5Array6bufferGdE(self) {
   return self.buf;
 }
+function _M0MPB18UninitializedArray6lengthGsE(self) {
+  return self.length;
+}
 function _M0MPB18UninitializedArray6lengthGdE(self) {
   return self.length;
+}
+function _M0MPC15array10FixedArray12unsafe__blitGRPB17UnsafeMaybeUninitGsEE(dst, dst_offset, src, src_offset, len) {
+  if (dst === src && dst_offset < src_offset) {
+    let _tmp = 0;
+    while (true) {
+      const i = _tmp;
+      if (i < len) {
+        const _tmp$2 = dst_offset + i | 0;
+        const _tmp$3 = src_offset + i | 0;
+        if (_tmp$2 >>> 0 < dst.length) {
+          dst[_tmp$2] = _tmp$3 >>> 0 < src.length ? src[_tmp$3] : $oob();
+        } else {
+          $oob();
+        }
+        _tmp = i + 1 | 0;
+        continue;
+      } else {
+        return;
+      }
+    }
+  } else {
+    let _tmp = len - 1 | 0;
+    let _tmp$2 = len > 0;
+    while (true) {
+      const i = _tmp;
+      const _more = _tmp$2;
+      if (_more) {
+        const _tmp$3 = dst_offset + i | 0;
+        const _tmp$4 = src_offset + i | 0;
+        if (_tmp$3 >>> 0 < dst.length) {
+          dst[_tmp$3] = _tmp$4 >>> 0 < src.length ? src[_tmp$4] : $oob();
+        } else {
+          $oob();
+        }
+        _tmp = i - 1 | 0;
+        _tmp$2 = i > 0;
+        continue;
+      } else {
+        return;
+      }
+    }
+  }
 }
 function _M0MPC15array10FixedArray12unsafe__blitGRPB17UnsafeMaybeUninitGdEE(dst, dst_offset, src, src_offset, len) {
   if (dst === src && dst_offset < src_offset) {
@@ -128,8 +183,16 @@ function _M0MPC15array10FixedArray12unsafe__blitGRPB17UnsafeMaybeUninitGdEE(dst,
     }
   }
 }
+function _M0MPB18UninitializedArray12unsafe__blitGsE(dst, dst_offset, src, src_offset, len) {
+  _M0MPC15array10FixedArray12unsafe__blitGRPB17UnsafeMaybeUninitGsEE(dst, dst_offset, src, src_offset, len);
+}
 function _M0MPB18UninitializedArray12unsafe__blitGdE(dst, dst_offset, src, src_offset, len) {
   _M0MPC15array10FixedArray12unsafe__blitGRPB17UnsafeMaybeUninitGdEE(dst, dst_offset, src, src_offset, len);
+}
+function _M0MPB18UninitializedArray23unsafe__make__and__blitGsE(src, allocate_len, src_offset, dst_offset, blit_len) {
+  const dst = new Array(allocate_len);
+  _M0MPB18UninitializedArray12unsafe__blitGsE(dst, dst_offset, src, src_offset, blit_len);
+  return dst;
 }
 function _M0MPB18UninitializedArray23unsafe__make__and__blitGdE(src, allocate_len, src_offset, dst_offset, blit_len) {
   const dst = new Array(allocate_len);
@@ -141,6 +204,24 @@ function _M0FPB11range__fits(offset, len, length) {
 }
 function _M0MPB13StringBuilder13write__objectGiE(self, obj) {
   _M0IP016_24default__implPB4Show6outputGiE(obj, { self: self, method_table: _M0FP092moonbitlang_2fcore_2fbuiltin_2fStringBuilder_24as_24_40moonbitlang_2fcore_2fbuiltin_2eLogger });
+}
+function _M0MPB18UninitializedArray23make__and__blit_2einnerGsE(src, allocate_len, len, src_offset, dst_offset) {
+  if (allocate_len >= 0 && (len >= 0 && (_M0FPB11range__fits(src_offset, len, _M0MPB18UninitializedArray6lengthGsE(src)) && _M0FPB11range__fits(dst_offset, len, allocate_len)))) {
+    return _M0MPB18UninitializedArray23unsafe__make__and__blitGsE(src, allocate_len, src_offset, dst_offset, len);
+  } else {
+    const _string_builder = _M0MPB13StringBuilder21StringBuilder_2einner(89);
+    _M0IPB13StringBuilderPB6Logger13write__string(_string_builder, "bounds check failed: allocate_len = ");
+    _M0MPB13StringBuilder13write__objectGiE(_string_builder, allocate_len);
+    _M0IPB13StringBuilderPB6Logger13write__string(_string_builder, ", src_offset = ");
+    _M0MPB13StringBuilder13write__objectGiE(_string_builder, src_offset);
+    _M0IPB13StringBuilderPB6Logger13write__string(_string_builder, ", dst_offset = ");
+    _M0MPB13StringBuilder13write__objectGiE(_string_builder, dst_offset);
+    _M0IPB13StringBuilderPB6Logger13write__string(_string_builder, ", len = ");
+    _M0MPB13StringBuilder13write__objectGiE(_string_builder, len);
+    _M0IPB13StringBuilderPB6Logger13write__string(_string_builder, ", src.length = ");
+    _M0MPB13StringBuilder13write__objectGiE(_string_builder, _M0MPB18UninitializedArray6lengthGsE(src));
+    return $panic(_M0MPB13StringBuilder10to__string(_string_builder));
+  }
 }
 function _M0MPB18UninitializedArray23make__and__blit_2einnerGdE(src, allocate_len, len, src_offset, dst_offset) {
   if (allocate_len >= 0 && (len >= 0 && (_M0FPB11range__fits(src_offset, len, _M0MPB18UninitializedArray6lengthGdE(src)) && _M0FPB11range__fits(dst_offset, len, allocate_len)))) {
@@ -215,6 +296,9 @@ function _M0IPB13StringBuilderPB6Logger11write__view(self, str) {
 function _M0IPC16string6StringPB4Show10to__string(self) {
   return self;
 }
+function _M0MPC15array5Array6lengthGsE(self) {
+  return self.len;
+}
 function _M0MPC15array5Array6lengthGdE(self) {
   return self.len;
 }
@@ -238,8 +322,19 @@ function _M0FPB23array__growth__capacity(current, len, required) {
     }
   }
 }
+function _M0MPC15array5Array8capacityGsE(self) {
+  return _M0MPC15array5Array6bufferGsE(self).length;
+}
 function _M0MPC15array5Array8capacityGdE(self) {
   return _M0MPC15array5Array6bufferGdE(self).length;
+}
+function _M0MPC15array5Array14resize__bufferGsE(self, new_capacity) {
+  const old_buf = self.buf;
+  self.buf = [];
+  const len = self.len;
+  const copy_len = len < new_capacity ? len : new_capacity;
+  const new_buf = _M0MPB18UninitializedArray23make__and__blit_2einnerGsE(old_buf, new_capacity, copy_len, 0, 0);
+  self.buf = new_buf;
 }
 function _M0MPC15array5Array14resize__bufferGdE(self, new_capacity) {
   const old_buf = self.buf;
@@ -249,10 +344,23 @@ function _M0MPC15array5Array14resize__bufferGdE(self, new_capacity) {
   const new_buf = _M0MPB18UninitializedArray23make__and__blit_2einnerGdE(old_buf, new_capacity, copy_len, 0, 0);
   self.buf = new_buf;
 }
+function _M0MPC15array5Array7reallocGsE(self, required) {
+  const old_cap = _M0MPC15array5Array8capacityGsE(self);
+  const new_cap = _M0FPB23array__growth__capacity(old_cap, self.len, required);
+  _M0MPC15array5Array14resize__bufferGsE(self, new_cap);
+}
 function _M0MPC15array5Array7reallocGdE(self, required) {
   const old_cap = _M0MPC15array5Array8capacityGdE(self);
   const new_cap = _M0FPB23array__growth__capacity(old_cap, self.len, required);
   _M0MPC15array5Array14resize__bufferGdE(self, new_cap);
+}
+function _M0MPC15array5Array4pushGsE(self, value) {
+  if (self.len === _M0MPC15array5Array6bufferGsE(self).length) {
+    _M0MPC15array5Array7reallocGsE(self, self.len + 1 | 0);
+  }
+  const length = self.len;
+  self.buf[length] = value;
+  self.len = length + 1 | 0;
 }
 function _M0MPC15array5Array4pushGdE(self, value) {
   if (self.len === _M0MPC15array5Array6bufferGdE(self).length) {
@@ -276,6 +384,10 @@ function _M0MPC16double6Double5round(_tmp) {
 }
 function _M0IPC16double6DoublePB3Mod3mod(self, other) {
   return _M0MPC16double6Double8mod__ffi(self, other);
+}
+function _M0MPC15array5Array2atGsE(self, index) {
+  const len = self.len;
+  return index >= 0 && index < len ? _M0MPC15array5Array6bufferGsE(self)[index] : $panic();
 }
 function _M0MPC15array5Array2atGdE(self, index) {
   const len = self.len;
@@ -844,61 +956,101 @@ function _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(xs) {
   }
   return `${s.val}]`;
 }
-function _M0FP48Duckweed10moon_2dfoc8examples9web__demo14panel__current(bw) {
-  const gains = _M0FP38Duckweed10moon_2dfoc10controller21design__current__loop(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), bw);
-  const vmax = _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3);
-  const ctrl = _M0MP38Duckweed10moon_2dfoc10controller13FocController3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus(), -vmax, vmax);
-  const elec = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel3new(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
-  const steps = 1200;
-  const every = 4;
-  const t = new _M0TPB5ArrayGdE([], 0);
-  const iq = new _M0TPB5ArrayGdE([], 0);
+function _M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(rows) {
+  const s = new _M0TPB8MutLocalGsE("[");
   const i = new _M0TPB8MutLocalGiE(0);
   while (true) {
-    if (i.val < steps) {
-      let ib;
-      let ia;
-      let ic;
-      _L: {
-        const _bind = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel15phase__currents(elec);
-        const _ia = _bind._0;
-        const _ib = _bind._1;
-        const _ic = _bind._2;
-        ib = _ib;
-        ia = _ia;
-        ic = _ic;
-        break _L;
+    if (i.val < _M0MPC15array5Array6lengthGsE(rows)) {
+      if (i.val > 0) {
+        s.val = `${s.val},`;
       }
-      let vq;
-      let obs_iq;
-      let vd;
-      _L$2: {
-        const _bind = _M0MP38Duckweed10moon_2dfoc10controller13FocController4step(ctrl, ia, ib, ic, _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel8theta__e(elec), 0, 5);
-        const _obs_iq = _bind._1;
-        const _vd = _bind._2;
-        const _vq = _bind._3;
-        vq = _vq;
-        obs_iq = _obs_iq;
-        vd = _vd;
-        break _L$2;
-      }
-      _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel4step(elec, vd, vq, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
-      if (every === 0) {
-        $panic();
-      }
-      if ((i.val % every | 0) === 0) {
-        _M0MPC15array5Array4pushGdE(t, (i.val + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
-        _M0MPC15array5Array4pushGdE(iq, obs_iq);
-      }
+      s.val = `${s.val}${_M0MPC15array5Array2atGsE(rows, i.val)}`;
       i.val = i.val + 1 | 0;
       continue;
     } else {
       break;
     }
   }
-  return `DATA {\"panel\":\"current\",\"bw\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(bw)},\"ref\":5,\"t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(t)},\"iq\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(iq)}}`;
+  return `${s.val}]`;
 }
-function _M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__speed() {
+function _M0FP48Duckweed10moon_2dfoc8examples9web__demo20panel__current__grid() {
+  const bws = new _M0TPB5ArrayGdE([], 0);
+  const kps = new _M0TPB5ArrayGdE([], 0);
+  const kis = new _M0TPB5ArrayGdE([], 0);
+  const pms = new _M0TPB5ArrayGdE([], 0);
+  const pms_delay = new _M0TPB5ArrayGdE([], 0);
+  const curves = new _M0TPB5ArrayGsE([], 0);
+  const t = new _M0TPB5ArrayGdE([], 0);
+  const vmax = _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3);
+  const bw = new _M0TPB8MutLocalGdE(100);
+  const first = new _M0TPB8MutLocalGbE(true);
+  while (true) {
+    if (bw.val <= 1000) {
+      const gains = _M0FP38Duckweed10moon_2dfoc10controller21design__current__loop(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), bw.val);
+      const ctrl = _M0MP38Duckweed10moon_2dfoc10controller13FocController3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus(), -vmax, vmax);
+      const elec = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel3new(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
+      const iq = new _M0TPB5ArrayGdE([], 0);
+      const i = new _M0TPB8MutLocalGiE(0);
+      while (true) {
+        if (i.val < 240) {
+          let ib;
+          let ia;
+          let ic;
+          _L: {
+            const _bind = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel15phase__currents(elec);
+            const _ia = _bind._0;
+            const _ib = _bind._1;
+            const _ic = _bind._2;
+            ib = _ib;
+            ia = _ia;
+            ic = _ic;
+            break _L;
+          }
+          let vq;
+          let obs_iq;
+          let vd;
+          _L$2: {
+            const _bind = _M0MP38Duckweed10moon_2dfoc10controller13FocController4step(ctrl, ia, ib, ic, _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel8theta__e(elec), 0, 5);
+            const _obs_iq = _bind._1;
+            const _vd = _bind._2;
+            const _vq = _bind._3;
+            vq = _vq;
+            obs_iq = _obs_iq;
+            vd = _vd;
+            break _L$2;
+          }
+          _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel4step(elec, vd, vq, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
+          if (4 === 0) {
+            $panic();
+          }
+          if ((i.val % 4 | 0) === 0) {
+            _M0MPC15array5Array4pushGdE(iq, obs_iq);
+            if (first.val) {
+              _M0MPC15array5Array4pushGdE(t, (i.val + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
+            }
+          }
+          i.val = i.val + 1 | 0;
+          continue;
+        } else {
+          break;
+        }
+      }
+      first.val = false;
+      _M0MPC15array5Array4pushGdE(bws, bw.val);
+      _M0MPC15array5Array4pushGdE(kps, _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains));
+      _M0MPC15array5Array4pushGdE(kis, _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains));
+      _M0MPC15array5Array4pushGdE(pms, _M0FP38Duckweed10moon_2dfoc10controller18phase__margin__deg(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains)));
+      _M0MPC15array5Array4pushGdE(pms_delay, _M0FP38Duckweed10moon_2dfoc10controller25margin__after__delay__deg(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step()));
+      _M0MPC15array5Array4pushGsE(curves, _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(iq));
+      bw.val = bw.val + 50;
+      continue;
+    } else {
+      break;
+    }
+  }
+  return `DATA {\"panel\":\"cur\",\"bw\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(bws)},\"kp\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(kps)},\"ki\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(kis)},\"pm\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(pms)},\"pm_delay\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(pms_delay)},\"t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(t)},\"iq\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(curves)}}`;
+}
+function _M0FP48Duckweed10moon_2dfoc8examples9web__demo18panel__speed__grid() {
   const j = 0.002;
   const b = 0.0005;
   const kt = 1.5 * (_M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs() + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot();
@@ -907,93 +1059,159 @@ function _M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__speed() {
   const iq_limit = 8;
   const omega_ref = 100;
   const load_at = 10000;
-  const load = 1;
   const steps = 20000;
-  const every = 25;
-  const speed_gains = _M0FP38Duckweed10moon_2dfoc10controller19design__speed__loop(j, b, kt, speed_hz);
-  const current_gains = _M0FP38Duckweed10moon_2dfoc10controller21design__current__loop(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), current_hz);
-  const vlimit = _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3);
-  const elec = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel3new(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
-  const mech = _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel3new(j, b, _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
-  const speed = _M0MP38Duckweed10moon_2dfoc10controller15SpeedController3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(speed_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(speed_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -iq_limit, iq_limit);
-  const pi_d = _M0MP38Duckweed10moon_2dfoc2pi2Pi3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(current_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(current_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -vlimit, vlimit);
-  const pi_q = _M0MP38Duckweed10moon_2dfoc2pi2Pi3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(current_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(current_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -vlimit, vlimit);
+  const every = 50;
+  const loads = new _M0TPB5ArrayGdE([], 0);
+  const peaks = new _M0TPB5ArrayGdE([], 0);
+  const drops = new _M0TPB5ArrayGdE([], 0);
+  const curves_w = new _M0TPB5ArrayGsE([], 0);
+  const curves_iq = new _M0TPB5ArrayGsE([], 0);
   const t = new _M0TPB5ArrayGdE([], 0);
-  const omega = new _M0TPB5ArrayGdE([], 0);
-  const iq_ref = new _M0TPB5ArrayGdE([], 0);
-  const i = new _M0TPB8MutLocalGiE(0);
+  const first = new _M0TPB8MutLocalGbE(true);
+  const load = new _M0TPB8MutLocalGdE(0.5);
   while (true) {
-    if (i.val < steps) {
-      const w = _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech);
-      const iq_cmd = _M0MP38Duckweed10moon_2dfoc10controller15SpeedController4step(speed, omega_ref, w);
-      const vd_pi = _M0MP38Duckweed10moon_2dfoc2pi2Pi4step(pi_d, 0 - _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2id(elec));
-      const vq_pi = _M0MP38Duckweed10moon_2dfoc2pi2Pi4step(pi_q, iq_cmd - _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2iq(elec));
-      const emf = _M0FP38Duckweed10moon_2dfoc10controller18back__emf__voltage(_M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__e(mech), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot());
-      let vd;
-      let vq;
-      _L: {
-        const _bind = _M0FP38Duckweed10moon_2dfoc10controller18apply__feedforward(vd_pi, vq_pi, 0, emf, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus());
-        const _vd = _bind._0;
-        const _vq = _bind._1;
-        vd = _vd;
-        vq = _vq;
-        break _L;
+    if (load.val <= 2.5) {
+      const speed_gains = _M0FP38Duckweed10moon_2dfoc10controller19design__speed__loop(j, b, kt, speed_hz);
+      const current_gains = _M0FP38Duckweed10moon_2dfoc10controller21design__current__loop(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), current_hz);
+      const vlimit = _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3);
+      const elec = _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel3new(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
+      const mech = _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel3new(j, b, _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs(), 0);
+      const speed = _M0MP38Duckweed10moon_2dfoc10controller15SpeedController3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(speed_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(speed_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -iq_limit, iq_limit);
+      const pi_d = _M0MP38Duckweed10moon_2dfoc2pi2Pi3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(current_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(current_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -vlimit, vlimit);
+      const pi_q = _M0MP38Duckweed10moon_2dfoc2pi2Pi3new(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(current_gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(current_gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step(), -vlimit, vlimit);
+      const om = new _M0TPB5ArrayGdE([], 0);
+      const iq_s = new _M0TPB5ArrayGdE([], 0);
+      const peak = new _M0TPB8MutLocalGdE(0);
+      const drop = new _M0TPB8MutLocalGdE(0);
+      const i = new _M0TPB8MutLocalGiE(0);
+      while (true) {
+        if (i.val < steps) {
+          const w = _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech);
+          const iq_cmd = _M0MP38Duckweed10moon_2dfoc10controller15SpeedController4step(speed, omega_ref, w);
+          const vd_pi = _M0MP38Duckweed10moon_2dfoc2pi2Pi4step(pi_d, 0 - _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2id(elec));
+          const vq_pi = _M0MP38Duckweed10moon_2dfoc2pi2Pi4step(pi_q, iq_cmd - _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2iq(elec));
+          const emf = _M0FP38Duckweed10moon_2dfoc10controller18back__emf__voltage(_M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__e(mech), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot());
+          let vd;
+          let vq;
+          _L: {
+            const _bind = _M0FP38Duckweed10moon_2dfoc10controller18apply__feedforward(vd_pi, vq_pi, 0, emf, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus());
+            const _vd = _bind._0;
+            const _vq = _bind._1;
+            vd = _vd;
+            vq = _vq;
+            break _L;
+          }
+          _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel10set__speed(elec, _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech));
+          _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel4step(elec, vd, vq, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
+          const te = _M0FP38Duckweed10moon_2dfoc5motor23electromagnetic__torque(_M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2id(elec), _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2iq(elec), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs());
+          const load_now = i.val >= load_at ? load.val : 0;
+          _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel4step(mech, te, load_now, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
+          if (every === 0) {
+            $panic();
+          }
+          if ((i.val % every | 0) === 0) {
+            const wv = _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech);
+            _M0MPC15array5Array4pushGdE(om, wv);
+            _M0MPC15array5Array4pushGdE(iq_s, iq_cmd);
+            if (first.val) {
+              _M0MPC15array5Array4pushGdE(t, (i.val + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
+            }
+            if (wv > peak.val) {
+              peak.val = wv;
+            }
+            if (i.val >= load_at && omega_ref - wv > drop.val) {
+              drop.val = omega_ref - wv;
+            }
+          }
+          i.val = i.val + 1 | 0;
+          continue;
+        } else {
+          break;
+        }
       }
-      _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel10set__speed(elec, _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech));
-      _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel4step(elec, vd, vq, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
-      const te = _M0FP38Duckweed10moon_2dfoc5motor23electromagnetic__torque(_M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2id(elec), _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel2iq(elec), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs());
-      const load_now = i.val >= load_at ? load : 0;
-      _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel4step(mech, te, load_now, _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
-      if (every === 0) {
-        $panic();
-      }
-      if ((i.val % every | 0) === 0) {
-        _M0MPC15array5Array4pushGdE(t, (i.val + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
-        _M0MPC15array5Array4pushGdE(omega, _M0MP38Duckweed10moon_2dfoc5motor15MechanicalModel8omega__m(mech));
-        _M0MPC15array5Array4pushGdE(iq_ref, iq_cmd);
-      }
-      i.val = i.val + 1 | 0;
+      first.val = false;
+      _M0MPC15array5Array4pushGdE(loads, load.val);
+      _M0MPC15array5Array4pushGdE(peaks, peak.val);
+      _M0MPC15array5Array4pushGdE(drops, drop.val);
+      _M0MPC15array5Array4pushGsE(curves_w, _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(om));
+      _M0MPC15array5Array4pushGsE(curves_iq, _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(iq_s));
+      load.val = load.val + 0.5;
       continue;
     } else {
       break;
     }
   }
-  return `DATA {\"panel\":\"speed\",\"omega_ref\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(omega_ref)},\"load_t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum((load_at + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step())},\"load\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(load)},\"t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(t)},\"omega\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(omega)},\"iq\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(iq_ref)}}`;
+  return `DATA {\"panel\":\"speed\",\"loads\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(loads)},\"peaks\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(peaks)},\"drops\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(drops)},\"load_t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum((load_at + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step())},\"t\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(t)},\"omega\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(curves_w)},\"iq\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(curves_iq)}}`;
 }
-function _M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__field(iq, id_min) {
+function _M0FP48Duckweed10moon_2dfoc8examples9web__demo18panel__field__grid() {
   const vmax = _M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3);
   const w = new _M0TPB5ArrayGdE([], 0);
-  const id = new _M0TPB5ArrayGdE([], 0);
-  const head = new _M0TPB5ArrayGdE([], 0);
+  const iqs = new _M0TPB5ArrayGdE([], 0);
+  const curves_id = new _M0TPB5ArrayGsE([], 0);
+  const curves_head = new _M0TPB5ArrayGsE([], 0);
   const omega_e = new _M0TPB8MutLocalGdE(300);
   while (true) {
     if (omega_e.val <= 900) {
       _M0MPC15array5Array4pushGdE(w, omega_e.val);
-      _M0MPC15array5Array4pushGdE(head, _M0FP38Duckweed10moon_2dfoc10controller14flux__headroom(omega_e.val, _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), iq, vmax));
-      _M0MPC15array5Array4pushGdE(id, _M0FP38Duckweed10moon_2dfoc10controller20field__weakening__id(omega_e.val, _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), iq, vmax, id_min));
       omega_e.val = omega_e.val + 20;
       continue;
     } else {
       break;
     }
   }
-  return `DATA {\"panel\":\"field\",\"iq\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(iq)},\"id_min\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(id_min)},\"omega_e\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(w)},\"headroom\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(head)},\"id\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(id)}}`;
+  const iq = new _M0TPB8MutLocalGdE(2);
+  while (true) {
+    if (iq.val <= 8) {
+      const id = new _M0TPB5ArrayGdE([], 0);
+      const head = new _M0TPB5ArrayGdE([], 0);
+      const _bind = w.len;
+      const _bind$2 = w.buf;
+      let _tmp = 0;
+      while (true) {
+        const _ = _tmp;
+        if (_ < _bind) {
+          const we = _bind$2[_];
+          _M0MPC15array5Array4pushGdE(head, _M0FP38Duckweed10moon_2dfoc10controller14flux__headroom(we, _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), iq.val, vmax));
+          _M0MPC15array5Array4pushGdE(id, _M0FP38Duckweed10moon_2dfoc10controller20field__weakening__id(we, _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), iq.val, vmax, -30));
+          _tmp = _ + 1 | 0;
+          continue;
+        } else {
+          break;
+        }
+      }
+      _M0MPC15array5Array4pushGdE(iqs, iq.val);
+      _M0MPC15array5Array4pushGsE(curves_id, _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(id));
+      _M0MPC15array5Array4pushGsE(curves_head, _M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(head));
+      iq.val = iq.val + 1;
+      continue;
+    } else {
+      break;
+    }
+  }
+  const id_limited = new _M0TPB5ArrayGdE([], 0);
+  const _bind = w.len;
+  const _bind$2 = w.buf;
+  let _tmp = 0;
+  while (true) {
+    const _ = _tmp;
+    if (_ < _bind) {
+      const we = _bind$2[_];
+      _M0MPC15array5Array4pushGdE(id_limited, _M0FP38Duckweed10moon_2dfoc10controller20field__weakening__id(we, _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7lq__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot(), 5, vmax, -8));
+      _tmp = _ + 1 | 0;
+      continue;
+    } else {
+      break;
+    }
+  }
+  return `DATA {\"panel\":\"field\",\"iqs\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(iqs)},\"omega_e\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(w)},\"id\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(curves_id)},\"headroom\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo5jrows(curves_head)},\"id_limited\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jarr(id_limited)}}`;
 }
 (() => {
   const gains = _M0FP38Duckweed10moon_2dfoc10controller21design__current__loop(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), 400);
-  const fc = _M0FP38Duckweed10moon_2dfoc10controller13crossover__hz(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains));
-  const pm = _M0FP38Duckweed10moon_2dfoc10controller18phase__margin__deg(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains));
-  const pm_delay = _M0FP38Duckweed10moon_2dfoc10controller25margin__after__delay__deg(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains), _M0FP48Duckweed10moon_2dfoc8examples9web__demo8dt__step());
   const kt = 1.5 * (_M0FP48Duckweed10moon_2dfoc8examples9web__demo11pole__pairs() + 0) * _M0FP48Duckweed10moon_2dfoc8examples9web__demo11psi__f__mot();
   const speed_gains = _M0FP38Duckweed10moon_2dfoc10controller19design__speed__loop(0.002, 0.0005, kt, 40);
-  _M0FPB7printlnGsE(`META {\"kp\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains))},\"ki\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains))},\"crossover\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(fc)},\"pm\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(pm)},\"pm_delay\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(pm_delay)},\"speed_kp\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(speed_gains))},\"speed_ki\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(speed_gains))},\"vlimit\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3))}}`);
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo14panel__current(200));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo14panel__current(400));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo14panel__current(800));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__speed());
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__field(2, -30));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__field(5, -30));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__field(8, -30));
-  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo12panel__field(5, -8));
+  _M0FPB7printlnGsE(`META {\"crossover\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0FP38Duckweed10moon_2dfoc10controller13crossover__hz(_M0FP48Duckweed10moon_2dfoc8examples9web__demo6r__mot(), _M0FP48Duckweed10moon_2dfoc8examples9web__demo7ld__mot(), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(gains), _M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(gains)))},\"speed_kp\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2kp(speed_gains))},\"speed_ki\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0MP38Duckweed10moon_2dfoc10controller9LoopGains2ki(speed_gains))},\"vlimit\":${_M0FP48Duckweed10moon_2dfoc8examples9web__demo4jnum(_M0FP48Duckweed10moon_2dfoc8examples9web__demo8vdc__bus() / Math.sqrt(3))},\"grid_bw\":19,\"grid_load\":5,\"grid_iq\":7}`);
+  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo20panel__current__grid());
+  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo18panel__speed__grid());
+  _M0FPB7printlnGsE(_M0FP48Duckweed10moon_2dfoc8examples9web__demo18panel__field__grid());
 })();
 //# sourceMappingURL=web_demo.js.map

@@ -6,13 +6,16 @@
 
 ### Added
 
-- `examples/web_demo` 与 `docs/demo`：把三相仿真结果打印成 `META` / `DATA` 开头的 JSON 行，
-  页面截获后画曲线。三个面板分别是电流环阶跃（200 / 400 / 800 Hz 三种整定）、速度环 0 → 100 rad/s
-  带 1 N·m 负载、弱磁给定随电角速度变化（iq 取 2 / 5 / 8 A，另附 id 下限 −8 A 的对比）。
-  曲线由 `controller/` 与 `motor/` 的同一批函数逐拍算出，页面不重写模型。配
-  `scripts/build-demo.ps1`：构建 `moon build --target js examples/web_demo`，把 `web_demo.js`
-  复制到 `docs/demo/` 并自检页面没有引用 `_build`。页面是静态的，只展示固定工况。
-
+- `examples/web_demo` 与 `docs/demo`：把参数网格算成 `META` / `DATA` 开头的 JSON 行，页面截获后
+  画曲线并配三组参数滑块。电流环带宽 100 → 1000 Hz 共 19 档，每档一份整定读数加 240 拍阶跃响应，
+  另画 200 / 400 / 800 Hz 参考线；速度环负载 0.5 → 2.5 N·m 共 5 档，转速与 iq 曲线共用滑块，
+  2.5 N·m 超出 iq 8 A 对应的转矩能力（约 2.4 N·m），该档按超限标注；弱磁 iq 2 → 8 A 共 7 档，
+  每档 id 与电压余量随 300 → 900 rad/s 变化，另附 iq = 5 A、id 下限 −8 A 的对比线。
+  曲线由 `controller/` 与 `motor/` 的同一批函数逐拍算出，页面不重写模型，滑块只切档 -
+  js 产物无导出、wasm-gc 只导出 `_start`，实时求解在静态页上不成立，所以走预计算网格。
+  全量网格在 node 下约 127 ms 跑完。配 `scripts/build-demo.ps1`：构建
+  `moon build --target js examples/web_demo`，把 `web_demo.js` 复制到 `docs/demo/`
+  并自检页面没有引用 `_build`。
 - `controller/feedforward.mbt`：d/q 解耦前馈与电压矢量限幅。`decoupling_terms` 按电压方程
   `vd = R·id + Ld·did/dt − ωe·Lq·iq`、`vq = R·iq + Lq·diq/dt + ωe·(Ld·id + ψf)` 给出
   `(−ωe·Lq·iq, ωe·(Ld·id + ψf))`；`back_emf_voltage` 单独给 `ωe·ψf`；`apply_feedforward`
