@@ -127,4 +127,36 @@ fn main {
       @controller.reconstruct_third(ia, ib),
     ).to_string(),
   )
+  // 过调制边界：内切圆（线性区边界）与外接圆之间还有一条六边形边，
+  // 削顶多少由方向决定，同一个幅值在轴线方向被削、在顶点方向不被削。
+  println("")
+  println("=== 过调制边界（Vdc = " + vdc.to_string() + " V）===")
+  let inradius = vdc / 3.0.sqrt()
+  println("线性区边界（内切圆）|V| = " + inradius.to_string())
+  println("顶点方向（外接圆）|V| = " + (2.0 * vdc / 3.0).to_string())
+  let axis_alpha = @math.cos(3.141592653589793 / 6.0)
+  let axis_beta = @math.sin(3.141592653589793 / 6.0)
+  println(
+    "30° 方向边界 |V| = " +
+    @svpwm.hexagon_radius(axis_alpha, axis_beta, vdc).to_string(),
+  )
+  println(
+    "0° 方向 30 V 的削顶比例 = " +
+    @svpwm.clipping_ratio(30.0, 0.0, vdc).to_string(),
+  )
+  let clipped = @svpwm.project_to_hexagon(
+    30.0 * axis_alpha,
+    30.0 * axis_beta,
+    vdc,
+  )
+  println(
+    "30° 方向 30 V 投影后 = (" +
+    clipped.0.to_string() +
+    ", " +
+    clipped.1.to_string() +
+    ")，幅值 " +
+    (clipped.0 * clipped.0 + clipped.1 * clipped.1).sqrt().to_string() +
+    "，削顶比例 " +
+    @svpwm.clipping_ratio(30.0 * axis_alpha, 30.0 * axis_beta, vdc).to_string(),
+  )
 }

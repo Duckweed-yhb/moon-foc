@@ -7,4 +7,6 @@ pkgtype(kind: "executable")
 import {
   "Duckweed/moon-foc/controller",
   "Duckweed/moon-foc/motor",
+  "Duckweed/moon-foc/svpwm",
+  "moonbitlang/core/math",
 }
