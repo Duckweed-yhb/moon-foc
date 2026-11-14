@@ -4,7 +4,7 @@
 
 MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控制器、简化电机模型，以及底层 SVPWM 调制与坐标变换。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、106 个用例全过、`check --deny-warn` 干净。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层、电流采样侧的第三相重构与采样窗口判据，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、114 个用例全过、`check --deny-warn` 干净。
 
 ## 安装
 
@@ -151,9 +151,29 @@ let after = @controller.margin_after_delay_deg(0.5, 0.002, g.kp(), g.ki(), 50.0e
 moon run examples/design_report --target native
 ```
 
+### 电流采样侧
+
+三相电流瞬时值之和恒为零，所以硬件通常只装两路传感器或两个采样电阻，第三相由软件重构。`controller/sampling.mbt` 把这一步和它的判据都做成函数：
+
+```moon
+let ic = @controller.reconstruct_third(1.984, -0.972)          // → -1.012
+let r = @controller.zero_sequence_residual(1.984, -0.972, ic)  // → 0
+// 单/双电阻采样要求该相下管导通时间足够长，否则运放还没建立完 ADC 就转换了
+let margin = @controller.sample_window_margin(0.52, 50.0e-6, 1.5e-6)  // → 22.5 µs
+let ok = @controller.window_ok(0.88, 50.0e-6, 1.5e-6)                 // → true，余量 4.5 µs
+let pairs = @controller.pick_sample_pair((0.52, 0.31, 0.88), 50.0e-6, 1.5e-6)
+// → [(0, 1), (0, 2), (1, 2)]，按两相中较小余量降序
+```
+
+`pick_sample_pair` 返回空数组表示三相的窗口都不够，这一拍采样应该丢弃，而不是硬取一路噪声。`zero_sequence_residual` 不参与控制，它是排查传感器的第一手信号：偏置、断线、两路不同步都会让三路之和偏离 0，`currents_consistent` 把这层判断按容差写成布尔值。
+
+`FocController::step_from_two_phases(ia, ib, θe, id_ref, iq_ref)` 把重构后的 ic 直接送进一拍电流环，采样相由调用方按 `pick_sample_pair` 的结果给定，控制器不隐式挑相。
+
+`examples/design_report` 末尾会打印这组读数：三相占空比 `(0.52, 0.31, 0.88)`、`Ts = 50 µs`、最小建立时间 1.5 µs 下，余量分别为 22.5 / 33 / 4.5 µs，优先采样相 `(0,1)`，两相重构 `ic = -1.012`、残差 0。
+
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 106 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
+CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 114 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -165,7 +185,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-106 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位，以及电流环整定的 9 条回归（对消比例、交叉频率落在目标带宽、理想裕度 90°、延时损失换算、可用性判据计入延时、带宽单调性与裕度反向、偏离对消时裕度下降、非法输入钳位、无交叉频率返回 0）。
+114 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位，以及电流环整定的 9 条回归（对消比例、交叉频率落在目标带宽、理想裕度 90°、延时损失换算、可用性判据计入延时、带宽单调性与裕度反向、偏离对消时裕度下降、非法输入钳位、无交叉频率返回 0），以及电流采样侧的 8 条回归（两相重构闭合三相和、非有限采样钳位、传感器一致性判据含非法容差、采样窗口余量随占空比与周期变化、非法窗口配置拒绝、候选采样相排序、三相全窄无候选、两相 step 与三相 step 逐位一致）。
 
 ## 独立数值夹具
 

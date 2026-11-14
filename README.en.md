@@ -9,10 +9,11 @@ Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping), Clarke /
 Park / inverse-Park transforms, angle conversion, a `controller/` closed
 current-loop object, a current-loop design layer that turns motor R/L plus a
-target bandwidth into PI gains, and a simplified `motor/` electrical model for
-offline simulation. No C FFI, no I/O. Verified locally with MoonBit
+target bandwidth into PI gains, two-phase current sampling (third-phase
+reconstruction plus ADC sample-window checks), and a simplified `motor/`
+electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (106/106 on each), with `moon check --deny-warn` clean on all four
+`moon test` (114/114 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -129,13 +130,45 @@ steady-state error of 2.2e-16 at 0.2 s.
 moon run examples/design_report --target native
 ```
 
+### Current sampling
+
+The three phase currents sum to zero at every instant, so production hardware
+usually carries only two sensors or two shunt resistors and reconstructs the third
+phase in software. `controller/sampling.mbt` exposes that step together with its
+checks:
+
+```moon
+let ic = @controller.reconstruct_third(1.984, -0.972)          // → -1.012
+let r = @controller.zero_sequence_residual(1.984, -0.972, ic)  // → 0
+// single/double-shunt sampling needs a long enough low-side on-time
+let margin = @controller.sample_window_margin(0.52, 50.0e-6, 1.5e-6)  // → 22.5 µs
+let ok = @controller.window_ok(0.88, 50.0e-6, 1.5e-6)                 // → true, 4.5 µs left
+let pairs = @controller.pick_sample_pair((0.52, 0.31, 0.88), 50.0e-6, 1.5e-6)
+// → [(0, 1), (0, 2), (1, 2)], ranked by the smaller margin of each pair
+```
+
+An empty array from `pick_sample_pair` means none of the three phases has a usable
+window, so this sample should be dropped rather than read as noise.
+`zero_sequence_residual` is not part of the control path; it is the first signal for
+an offset, a broken channel or two unsynchronised channels, and
+`currents_consistent` turns that into a boolean against a tolerance.
+
+`FocController::step_from_two_phases(ia, ib, θe, id_ref, iq_ref)` pushes the
+reconstructed ic into one current-loop tick. The caller chooses the sampled phases
+from `pick_sample_pair`; the controller never picks them implicitly.
+
+`examples/design_report` prints these readings at the end: for duties
+`(0.52, 0.31, 0.88)`, `Ts = 50 µs` and a 1.5 µs settling floor, the margins are
+22.5 / 33 / 4.5 µs, the preferred pair is `(0,1)`, and the reconstruction gives
+`ic = -1.012` with zero residual.
+
 ## Test
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 106 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 114 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -151,7 +184,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-106 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+114 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -163,7 +196,11 @@ pole pairs and inductance, plus 9 regressions on current-loop design (cancellati
 ratio, crossover at target bandwidth, 90° ideal margin, delay loss conversion,
 usability judged after delay, bandwidth monotonicity against margin, margin drop
 when cancellation is off, invalid-input clamping, zero crossover when the loop
-never crosses 0 dB).
+never crosses 0 dB), plus 8 regressions on current sampling (reconstruction closing
+the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
+check including invalid tolerances, window margin as duty and period vary, invalid
+window configuration rejected, sample-pair ranking, no candidate when all phases
+are too narrow, and the two-phase step matching the three-phase step bit for bit).
 
 ## Independent numeric fixtures
 

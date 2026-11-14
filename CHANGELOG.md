@@ -34,7 +34,18 @@
   计入延时后的裕度，再把同一组增益接回 `FocController` + `PmsmModel` 闭环，验证
   `iq` 按设计收敛到给定值（本机 native 实测 800 Hz 整定、20 ms 时 `iq = 1.99999`，
   0.2 s 时稳态误差 2.2e-16）。
-- 测试数 95 → 106。
+- `controller/sampling.mbt`：电流采样侧。三相电流瞬时和为零，硬件只装两路传感器时第三相
+  由 `reconstruct_third(ia, ib) = -ia - ib` 重构；`zero_sequence_residual` 给出三路之和，
+  作为传感器偏置、断线、采样不同步的第一手信号，`currents_consistent` 按容差判一致性。
+  采样窗口按 `(1 - duty)·Ts - min_window` 给余量（占空比先钳到 `[0, 1]`，非正周期或负窗口
+  直接判失败），`window_ok` 给布尔判据，`pick_sample_pair` 按两相中较小余量降序给出可用相
+  对，空数组表示这一拍应该丢弃采样。另加 `FocController::step_from_two_phases`，把重构后的
+  三相直接送进一拍电流环，采样相由调用方决定，不在控制器里隐式挑相。补 8 条测试：重构闭合、
+  非有限输入钳位、传感器一致性（含非法容差）、窗口余量随占空比与周期变化、非法配置拒绝、
+  候选相排序、三相全窄无候选、两相 step 与三相 step 逐位一致。
+- `examples/design_report`：整定报告末尾加采样侧读数，打印同一拍三相占空比的窗口余量、
+  优先采样相，以及两相重构的第三相与残差。
+- 测试数 95 → 114。
 
 ### Fixed
 
