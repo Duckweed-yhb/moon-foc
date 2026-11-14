@@ -4,7 +4,7 @@
 
 MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控制器、简化电机模型，以及底层 SVPWM 调制与坐标变换。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层、电流采样侧的第三相重构与采样窗口判据，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、118 个用例全过、`check --deny-warn` 干净。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层、电流采样侧的第三相重构与采样窗口判据，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、125 个用例全过、`check --deny-warn` 干净。
 
 ## 安装
 
@@ -70,6 +70,7 @@ seq     [4 2.5e-5][6 2.5e-5][6 2.5e-5][4 2.5e-5]     ← 零矢量段消失，�
 - 线性调制区边界：`|Vref| <= Vdc/√3`；超出后对 T1/T2 按比例缩放，使 `T1+T2 = Ts`——比例保持，所以合成矢量**方向不变**（相位不失真），幅值被压到六边形边上，落在 `[Vdc/√3, 2Vdc/3]`。这是「比例钳位」而非 MPE/顶点保持策略，测试里两条性质都钉住了。
   `modulation_index` 给出 m = |Vref|/(Vdc/√3)，`is_overmodulated` 在 m > 1 时返回 true
   （钳位只保证 T1+T2=Ts，不告诉调用方「已经削顶了」，需要报警/降额时看这两个）。
+- 削顶多少可以分方向算：`hexagon_radius(alpha, beta, Vdc)` 给出该方向上的六边形边界幅值（扇区轴线恰为 `Vdc/√3`，顶点方向为 `2·Vdc/3`），`project_to_hexagon` 保持方向把矢量压到边界，`clipping_ratio` 给出被削掉的幅值比例。比例钳位与这条几何落在同一个幅值上，测试里用「投影后再算 `action_times`，T1+T2 刚好等于 Ts」互证。**模式 II**（幅值保持、相位压缩与顶点保持段）需要跨基波周期维护角度状态，本库没做，这里只有保持相位的削顶 - 同一个幅值在扇区轴线方向会被削、在顶点方向不会。`examples/design_report` 末尾打印这组边界读数：`Vdc = 48 V` 时内切圆 27.7128 V、顶点 32 V，30 V 的矢量在 0° 方向不削顶、在 30° 方向被削 7.62%、投影后幅值 27.7128 V。
 - 角度：`mechanical_to_electrical(mech, p)` 给出电角度；`electrical_to_mechanical(elec, p)`
   是**周期意义下**的逆，输出落在 `[0, 2π/p)`，满足往返后回到同一个电角度。
 - 第二条调制路径：`duties_from_voltages(va, vb, vc, Vdc)` 用载波法（零序注入 `(vmax+vmin)/2`）
@@ -179,7 +180,7 @@ moon run examples/sampling_loop --target native
 
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 118 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
+CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 125 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -191,7 +192,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-118 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位，以及电流环整定的 9 条回归（对消比例、交叉频率落在目标带宽、理想裕度 90°、延时损失换算、可用性判据计入延时、带宽单调性与裕度反向、偏离对消时裕度下降、非法输入钳位、无交叉频率返回 0），以及电流采样侧的 12 条回归（两相重构闭合三相和、非有限采样钳位、传感器一致性判据含非法容差、采样窗口余量随占空比与周期变化、非法窗口配置拒绝、候选采样相排序、三相全窄无候选、两相 step 与三相 step 逐位一致、按相号还原三相电流、坏相号与坏采样作废、任意一对相驱动与三相驱动等价、坏相号不碰 PI 状态）。
+125 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位，以及电流环整定的 9 条回归（对消比例、交叉频率落在目标带宽、理想裕度 90°、延时损失换算、可用性判据计入延时、带宽单调性与裕度反向、偏离对消时裕度下降、非法输入钳位、无交叉频率返回 0），以及电流采样侧的 12 条回归（两相重构闭合三相和、非有限采样钳位、传感器一致性判据含非法容差、采样窗口余量随占空比与周期变化、非法窗口配置拒绝、候选采样相排序、三相全窄无候选、两相 step 与三相 step 逐位一致、按相号还原三相电流、坏相号与坏采样作废、任意一对相驱动与三相驱动等价、坏相号不碰 PI 状态），以及过调制几何的 7 条回归（扇区轴线处边界等于内切圆、顶点方向等于 2/3 母线、解析边界与 `action_times` 钳位后的幅值一致、投影保方向且落在边界、线性区投影原样返回、削顶比例在线性区为零且超界为正）。
 
 ## 独立数值夹具
 

@@ -13,7 +13,7 @@ target bandwidth into PI gains, two-phase current sampling (third-phase
 reconstruction plus ADC sample-window checks), and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (118/118 on each), with `moon check --deny-warn` clean on all four
+`moon test` (125/125 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -56,7 +56,19 @@ Conventions:
 - Park: `d = alpha*cosθ + beta*sinθ`, `q = -alpha*sinθ + beta*cosθ`.
 - SVPWM duties are centered around 0 (range [-1, 1]); 0 means 50% on-time.
 - Linear modulation limit: `|Vref| <= Vdc/√3`. Beyond that, T1/T2 are scaled
-  so `T1+T2 = Ts`.
+  so `T1+T2 = Ts`, which keeps the reference direction and pushes the magnitude
+  onto the hexagon edge.
+- How much is clipped can be computed per direction: `hexagon_radius(alpha, beta,
+  Vdc)` returns the hexagon boundary along that direction (exactly `Vdc/√3` on a
+  sector axis, `2·Vdc/3` at a vertex), `project_to_hexagon` keeps the direction and
+  lands the vector on that boundary, and `clipping_ratio` reports the fraction of
+  magnitude removed. The proportional clamp and this geometry reach the same
+  magnitude; the tests cross-check by projecting first and then running
+  `action_times`, whose T1+T2 must come out at exactly Ts. Mode II (hold the
+  magnitude, compress the phase, vertex-hold segments) needs per-fundamental angle
+  state and is not implemented; only phase-preserving clipping is, so a 30 V
+  reference is untouched at 0° and clipped by 7.62% at 30° with `Vdc = 48 V`.
+  `examples/design_report` prints these boundary readings at the end.
 
 ## Current-loop controller and simplified motor model
 
@@ -187,7 +199,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 118 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 125 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -203,7 +215,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-118 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+125 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -219,7 +231,7 @@ never crosses 0 dB), plus 12 regressions on current sampling (reconstruction clo
 the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
 check including invalid tolerances, window margin as duty and period vary, invalid
 window configuration rejected, sample-pair ranking, no candidate when all phases
-are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, and a bad pair leaving the PI state untouched).
+are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond).
 
 ## Independent numeric fixtures
 
