@@ -87,4 +87,44 @@ fn main {
     i += 1
   }
   println("稳态误差 = " + (model.iq() - iq_ref).abs().to_string())
+
+  // 采样侧：同一拍的三相占空比下，检查哪两相的下管导通时间够 ADC 建立。
+  let min_window = 1.5e-6
+  let duties = (0.52, 0.31, 0.88)
+  let (da, db, dc) = duties
+  println(
+    "采样窗口余量 (µs)：a = " +
+    @controller.sample_window_margin(da, ts, min_window).to_string() +
+    "，b = " +
+    @controller.sample_window_margin(db, ts, min_window).to_string() +
+    "，c = " +
+    @controller.sample_window_margin(dc, ts, min_window).to_string(),
+  )
+  let pairs = @controller.pick_sample_pair(duties, ts, min_window)
+  if pairs.length() == 0 {
+    println("三相都不满足采样窗口，本次采样丢弃")
+  } else {
+    let (pa, pb) = pairs[0]
+    println(
+      "优先采样相：" +
+      pa.to_string() +
+      " 与 " +
+      pb.to_string() +
+      "，候选对 " +
+      pairs.length().to_string() +
+      " 组",
+    )
+  }
+  let ia = 1.984
+  let ib = -0.972
+  println(
+    "两相重构 ic = " +
+    @controller.reconstruct_third(ia, ib).to_string() +
+    "，残差 = " +
+    @controller.zero_sequence_residual(
+      ia,
+      ib,
+      @controller.reconstruct_third(ia, ib),
+    ).to_string(),
+  )
 }
