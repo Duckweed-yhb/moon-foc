@@ -6,6 +6,13 @@
 
 ### Added
 
+- `examples/web_demo` 与 `docs/demo`：把三相仿真结果打印成 `META` / `DATA` 开头的 JSON 行，
+  页面截获后画曲线。三个面板分别是电流环阶跃（200 / 400 / 800 Hz 三种整定）、速度环 0 → 100 rad/s
+  带 1 N·m 负载、弱磁给定随电角速度变化（iq 取 2 / 5 / 8 A，另附 id 下限 −8 A 的对比）。
+  曲线由 `controller/` 与 `motor/` 的同一批函数逐拍算出，页面不重写模型。配
+  `scripts/build-demo.ps1`：构建 `moon build --target js examples/web_demo`，把 `web_demo.js`
+  复制到 `docs/demo/` 并自检页面没有引用 `_build`。页面是静态的，只展示固定工况。
+
 - `controller/feedforward.mbt`：d/q 解耦前馈与电压矢量限幅。`decoupling_terms` 按电压方程
   `vd = R·id + Ld·did/dt − ωe·Lq·iq`、`vq = R·iq + Lq·diq/dt + ωe·(Ld·id + ψf)` 给出
   `(−ωe·Lq·iq, ωe·(Ld·id + ψf))`；`back_emf_voltage` 单独给 `ωe·ψf`；`apply_feedforward`

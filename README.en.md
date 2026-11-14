@@ -310,6 +310,19 @@ moon run examples/sampling_loop --target native
 22.5 / 33 / 4.5 µs, the preferred pair is `(0,1)`, and the reconstruction gives
 `ic = -1.012` with zero residual.
 
+## Browser demo (`docs/demo`)
+
+`examples/web_demo` runs the closed-loop simulation and prints JSON lines to the console (one `META` line with design readouts, one `DATA` line per panel); `docs/demo/index.html` captures those lines and draws them. Every number on the page comes from a function in `controller/` or `motor/` - the JavaScript never re-derives the model.
+
+Three panels: current-loop step at three designs (200 / 400 / 800 Hz on one chart), speed loop from 0 to 100 rad/s with a 1 N m load applied at 1.0 s, and field-weakening current over 300 to 900 rad/s (iq = 2 / 5 / 8 A, plus one curve with the id lower bound clamped at -8 A).
+
+```
+pwsh -File scripts/build-demo.ps1      # build the JS artifact and copy it into docs/demo
+python -m http.server 8765             # run from the repo root, then open http://127.0.0.1:8765/docs/demo/
+```
+
+The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The page is static: the operating points are hard-coded in `examples/web_demo/main.mbt`, and other parameters require editing the source and re-running the script. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
+
 ## Test
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /

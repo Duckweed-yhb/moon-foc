@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moon-foc 浏览器演示 - 电流环 / 速度环 / 弱磁</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --panel: #14181f;
+    --line: #232935;
+    --text: #d7dde8;
+    --muted: #7d8798;
+    --cyan: #4fd1c5;
+    --orange: #f6ad55;
+    --blue: #63b3ed;
+    --red: #fc8181;
+    --green: #68d391;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 14px/1.65 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    padding: 32px 20px 48px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 6px; letter-spacing: .3px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 22px; }
+  .sub code { color: var(--cyan); background: none; }
+  .cards { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+  .stat {
+    flex: 1 1 150px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .stat .k { color: var(--muted); font-size: 12px; }
+  .stat .v { font: 600 17px/1.3 ui-monospace, Consolas, monospace; color: var(--cyan); }
+  .stat .u { color: var(--muted); font-size: 12px; font-weight: 400; }
+  section { margin-bottom: 30px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 10px; }
+  .card + .card { margin-top: 12px; }
+  .hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .hd h2 { font-size: 15px; margin: 0; font-weight: 600; }
+  .hd .note { color: var(--muted); font-size: 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-left: auto; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: 2px; }
+  .legend i.dash { height: 0; border-top: 2px dashed currentColor; }
+  canvas { display: block; width: 100%; height: 230px; }
+  canvas.short { height: 180px; }
+  .cap { color: var(--muted); font-size: 12px; margin: 6px 2px 4px; }
+  footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer code { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>moon-foc 浏览器演示</h1>
+  <p class="sub">
+    曲线不是截图，是页面加载时由 <code>web_demo.js</code>（MoonBit js 后端产物）逐拍算出来的：
+    电流环 PI、速度 PI、机械方程、弱磁给定都来自库里的同一个函数。
+  </p>
+
+  <div class="cards" id="stats"></div>
+
+  <section>
+    <div class="card">
+      <div class="hd">
+        <h2>电流环阶跃响应</h2>
+        <span class="note">iq 给定 0 → 5 A，三种整定带宽，dt = 0.1 ms</span>
+        <div class="legend">
+          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>200 Hz</span>
+          <span style="color:#f6ad55"><i style="background:#f6ad55"></i>400 Hz</span>
+          <span style="color:#63b3ed"><i style="background:#63b3ed"></i>800 Hz</span>
+        </div>
+      </div>
+      <canvas id="cv-current"></canvas>
+      <p class="cap">带宽越高上升越快，代价是延时引起的相位损失变大；三次整定的交叉频率与相角裕度见上方读数。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="hd">
+        <h2>速度环：转速跟踪</h2>
+        <span class="note">0 → 100 rad/s，1.0 s 时加 1 N·m 负载</span>
+        <div class="legend">
+          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>机械角速度</span>
+          <span style="color:#f6ad55"><i class="dash" style="color:#f6ad55"></i>负载投入时刻</span>
+        </div>
+      </div>
+      <canvas id="cv-speed"></canvas>
+      <p class="cap">级联结构：速度 PI 出 iq 给定，电流 PI 出 d/q 电压（只补反电动势前馈），电气模型步进后算电磁转矩，再推进机械方程。</p>
+    </div>
+    <div class="card">
+      <div class="hd">
+        <h2>速度环：iq 给定</h2>
+        <span class="note">受 ±8 A 限幅，稳态值由负载与阻尼决定</span>
+        <div class="legend">
+          <span style="color:#f6ad55"><i style="background:#f6ad55"></i>iq 给定</span>
+          <span style="color:#7d8798"><i class="dash" style="color:#7d8798"></i>±8 A 限幅</span>
+        </div>
+      </div>
+      <canvas id="cv-iq" class="short"></canvas>
+      <p class="cap">启动段 iq 顶到限幅，进入稳态后落到 3.5 A 附近——1 N·m 负载除以 Kt = 0.3 N·m/A，再加上阻尼项。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="hd">
+        <h2>弱磁：d 轴电流给定</h2>
+        <span class="note">iq 取 2 / 5 / 8 A，Vmax = Vdc/√3 = 27.7128 V</span>
+        <div class="legend">
+          <span style="color:#4fd1c5"><i style="background:#4fd1c5"></i>iq = 2 A</span>
+          <span style="color:#f6ad55"><i style="background:#f6ad55"></i>iq = 5 A</span>
+          <span style="color:#63b3ed"><i style="background:#63b3ed"></i>iq = 8 A</span>
+          <span style="color:#7d8798"><i class="dash" style="color:#7d8798"></i>iq = 5 A，id 下限 −8 A</span>
+        </div>
+      </div>
+      <canvas id="cv-field"></canvas>
+      <p class="cap">电压余量转负之后 id 才往负走；虚线是把 id 下限收到 −8 A 的同一条曲线，用来看出限幅确实在起作用。</p>
+    </div>
+    <div class="card">
+      <div class="hd">
+        <h2>弱磁：电压余量</h2>
+        <span class="note">flux_headroom，单位韦伯，iq = 5 A</span>
+        <div class="legend">
+          <span style="color:#68d391"><i style="background:#68d391"></i>余量</span>
+        </div>
+      </div>
+      <canvas id="cv-head" class="short"></canvas>
+      <p class="cap">余量过零的那一点就是基速；此前 id 保持 0，此后按 headroom / Ld 分配负 d 轴电流。</p>
+    </div>
+  </section>
+
+  <footer>
+    数据来源：<code>examples/web_demo</code> 用 <code>moon build --target js</code> 构建，
+    产物 <code>web_demo.js</code> 与本页同目录。曲线与 README 里的读数同源，改库必须重新出图：
+    <code>pwsh scripts/build-demo.ps1</code>。
+  </footer>
+</div>
+
+<script>
+/* 截获控制台输出：MoonBit 的 println 走 console.log，页面按前缀收数据。
+   必须在加载 web_demo.js 之前完成。 */
+window.__focDemo = { meta: null, current: [], speed: null, field: [] };
+(function () {
+  var raw = console.log;
+  console.log = function () {
+    try {
+      var text = Array.prototype.map.call(arguments, String).join(" ");
+      if (text.indexOf("META ") === 0) {
+        window.__focDemo.meta = JSON.parse(text.slice(5));
+      } else if (text.indexOf("DATA ") === 0) {
+        var obj = JSON.parse(text.slice(5));
+        if (obj.panel === "speed") window.__focDemo.speed = obj;
+        else if (obj.panel === "current") window.__focDemo.current.push(obj);
+        else if (obj.panel === "field") window.__focDemo.field.push(obj);
+      }
+    } catch (e) {
+      /* 解析失败不影响页面其余部分 */
+    }
+    raw.apply(console, arguments);
+  };
+})();
+</script>
+<script src="./web_demo.js"></script>
+<script>
+(function () {
+  var D = window.__focDemo;
+
+  function fmt(v) {
+    if (!v) return "0";
+    var a = Math.abs(v), s;
+    if (a >= 1000) s = v.toFixed(0);
+    else if (a >= 100) s = v.toFixed(1);
+    else if (a >= 1) s = v.toFixed(2);
+    else if (a >= 0.01) s = v.toFixed(3);
+    else s = v.toPrecision(2);
+    if (s.indexOf(".") >= 0) s = s.replace(/0+$/, "").replace(/\.$/, "");
+    return s;
+  }
+
+  function ticks(lo, hi, n) {
+    var span = hi - lo;
+    if (span <= 0) return [lo];
+    var step = Math.pow(10, Math.floor(Math.log10(span / n)));
+    var mult = span / n / step;
+    if (mult >= 7.5) step *= 10;
+    else if (mult >= 3.5) step *= 5;
+    else if (mult >= 1.5) step *= 2;
+    var out = [];
+    for (var v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(v);
+    return out;
+  }
+
+  function chart(id, cfg) {
+    var cv = document.getElementById(id);
+    var box = cv.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var w = Math.max(320, box.width);
+    var h = box.height;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var L = 54, R = 14, T = 12, B = 32;
+    var pw = w - L - R, ph = h - T - B;
+    var xs = cfg.xmin, xe = cfg.xmax, ys = cfg.ymin, ye = cfg.ymax;
+    function px(x) { return L + (x - xs) / (xe - xs) * pw; }
+    function py(y) { return T + (1 - (y - ys) / (ye - ys)) * ph; }
+
+    ctx.strokeStyle = "#232935";
+    ctx.fillStyle = "#7d8798";
+    ctx.font = "11px ui-monospace, Consolas, monospace";
+    ctx.lineWidth = 1;
+
+    var yt = ticks(ys, ye, 5);
+    for (var i = 0; i < yt.length; i++) {
+      var y = py(yt[i]);
+      ctx.beginPath();
+      ctx.moveTo(L, y);
+      ctx.lineTo(L + pw, y);
+      ctx.stroke();
+      ctx.textAlign = "right";
+      ctx.fillText(fmt(yt[i]), L - 8, y + 4);
+    }
+    var xt = ticks(xs, xe, 6);
+    for (var k = 0; k < xt.length; k++) {
+      var x = px(xt[k]);
+      ctx.beginPath();
+      ctx.moveTo(x, T);
+      ctx.lineTo(x, T + ph);
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.fillText(fmt(xt[k]), x, T + ph + 18);
+    }
+
+    ctx.strokeStyle = "#5b6478";
+    ctx.beginPath();
+    ctx.moveTo(L, T + ph);
+    ctx.lineTo(L + pw, T + ph);
+    ctx.stroke();
+
+    if (cfg.zero) {
+      var zy = py(0);
+      ctx.save();
+      ctx.strokeStyle = "#3a4152";
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(L, zy);
+      ctx.lineTo(L + pw, zy);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    (cfg.vlines || []).forEach(function (vl) {
+      var x = px(vl.x);
+      ctx.save();
+      ctx.strokeStyle = vl.color || "#f6ad55";
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x, T);
+      ctx.lineTo(x, T + ph);
+      ctx.stroke();
+      ctx.restore();
+      if (vl.label) {
+        ctx.fillStyle = vl.color || "#f6ad55";
+        ctx.textAlign = x > L + pw * 0.7 ? "right" : "left";
+        ctx.fillText(vl.label, x + (x > L + pw * 0.7 ? -6 : 6), T + 14);
+      }
+    });
+
+    (cfg.series || []).forEach(function (s) {
+      ctx.save();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.width || 1.8;
+      if (s.dash) ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      for (var j = 0; j < s.points.length; j++) {
+        var p = s.points[j];
+        var cx = px(p[0]), cy = py(p[1]);
+        if (j === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.fillStyle = "#7d8798";
+    ctx.font = "11px -apple-system, 'Microsoft YaHei', sans-serif";
+    ctx.textAlign = "left";
+    if (cfg.xlabel) ctx.fillText(cfg.xlabel, L + pw - ctx.measureText(cfg.xlabel).width, h - 4);
+    if (cfg.ylabel) {
+      ctx.save();
+      ctx.translate(12, T + ph / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText(cfg.ylabel, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  function pair(t, v) {
+    var out = [];
+    for (var i = 0; i < t.length; i++) out.push([t[i], v[i]]);
+    return out;
+  }
+
+  /* 顶部读数 */
+  var m = D.meta || {};
+  var stats = [
+    ["电流环 Kp", m.kp, "V/A"],
+    ["电流环 Ki", m.ki, "V/(A·s)"],
+    ["交叉频率", m.crossover, "Hz"],
+    ["相角裕度", m.pm, "deg"],
+    ["计延时裕度", m.pm_delay, "deg"],
+    ["速度环 Kp", m.speed_kp, "A/(rad/s)"],
+    ["速度环 Ki", m.speed_ki, "A/rad"],
+    ["电压限幅", m.vlimit, "V"]
+  ];
+  var host = document.getElementById("stats");
+  stats.forEach(function (s) {
+    var el = document.createElement("div");
+    el.className = "stat";
+    el.innerHTML = '<div class="k">' + s[0] + '</div><div class="v">' +
+      (s[1] === undefined ? "-" : fmt(s[1]) + ' <span class="u">' + s[2] + "</span>") + "</div>";
+    host.appendChild(el);
+  });
+
+  var colors = { "200": "#4fd1c5", "400": "#f6ad55", "800": "#63b3ed" };
+  var cur = D.current || [];
+  chart("cv-current", {
+    xmin: 0, xmax: 0.02, ymin: 0, ymax: 6,
+    xlabel: "时间 / s", ylabel: "iq / A",
+    series: cur.map(function (p) {
+      return { color: colors[String(p.bw)] || "#63b3ed", points: pair(p.t, p.iq) };
+    })
+  });
+
+  var sp = D.speed;
+  if (sp) {
+    chart("cv-speed", {
+      xmin: 0, xmax: 2, ymin: 0, ymax: 110,
+      xlabel: "时间 / s", ylabel: "机械角速度 / rad·s⁻¹",
+      vlines: [{ x: sp.load_t, label: "加 1 N·m", color: "#f6ad55" }],
+      series: [{ color: "#4fd1c5", points: pair(sp.t, sp.omega) }]
+    });
+    chart("cv-iq", {
+      xmin: 0, xmax: 2, ymin: -9, ymax: 9,
+      xlabel: "时间 / s", ylabel: "iq 给定 / A",
+      zero: true,
+      vlines: [{ x: sp.load_t, color: "#f6ad55" }],
+      series: [
+        { color: "#7d8798", dash: true, width: 1.2, points: [[0, 8], [2, 8]] },
+        { color: "#7d8798", dash: true, width: 1.2, points: [[0, -8], [2, -8]] },
+        { color: "#f6ad55", points: pair(sp.t, sp.iq) }
+      ]
+    });
+  }
+
+  var fld = D.field || [];
+  var fieldColors = ["#4fd1c5", "#f6ad55", "#63b3ed"];
+  var natural = fld.filter(function (f) { return f.id_min <= -25; });
+  chart("cv-field", {
+    xmin: 300, xmax: 900, ymin: -30, ymax: 2,
+    xlabel: "电角速度 / rad·s⁻¹", ylabel: "id / A",
+    zero: true,
+    series: natural.map(function (p, i) {
+      return {
+        color: fieldColors[i] || "#63b3ed",
+        points: pair(p.omega_e, p.id)
+      };
+    }).concat(fld.filter(function (f) { return f.id_min > -25; }).map(function (p) {
+      return { color: "#7d8798", dash: true, width: 1.4, points: pair(p.omega_e, p.id) };
+    }))
+  });
+
+  var head5 = fld.filter(function (f) { return f.iq === 5 && f.id_min <= -25; })[0];
+  if (head5) {
+    chart("cv-head", {
+      xmin: 300, xmax: 900, ymin: -0.03, ymax: 0.05,
+      xlabel: "电角速度 / rad·s⁻¹", ylabel: "余量 / Wb",
+      zero: true,
+      series: [{ color: "#68d391", points: pair(head5.omega_e, head5.headroom) }]
+    });
+  }
+})();
+</script>
+</body>
+</html>

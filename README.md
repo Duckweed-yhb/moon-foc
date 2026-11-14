@@ -237,6 +237,19 @@ let pairs = @controller.pick_sample_pair((0.52, 0.31, 0.88), 50.0e-6, 1.5e-6)
 moon run examples/sampling_loop --target native
 ```
 
+## 浏览器演示（`docs/demo`）
+
+`examples/web_demo` 把闭环仿真算成 JSON 行打印到控制台（`META` 一行整定读数、`DATA` 每行一个面板），`docs/demo/index.html` 截获这些行后画成曲线。页面里的每个数都由 `controller/` 与 `motor/` 的函数产生，JS 里不重写模型。
+
+三个面板：电流环阶跃（200 / 400 / 800 Hz 三种整定同图对比）、速度环 0 → 100 rad/s 并在 1.0 s 加 1 N·m 负载、弱磁给定随电角速度 300 → 900 rad/s 变化（iq 取 2 / 5 / 8 A，另附一条 id 下限 −8 A 的对比线）。
+
+```
+pwsh -File scripts/build-demo.ps1      # 构建 js 产物并复制到 docs/demo
+python -m http.server 8765             # 仓库根目录执行，然后打开 http://127.0.0.1:8765/docs/demo/
+```
+
+产物与页面同目录且不依赖 CDN，直接双击 `docs/demo/index.html` 也能看。页面是静态的：工况写死在 `examples/web_demo/main.mbt` 里，要看别的参数得改源文件重跑脚本；GitHub Pages 托管需要在仓库设置里把 `docs/` 设为发布源，这一步不在仓库内。
+
 ## 测试
 
 CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 151 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
