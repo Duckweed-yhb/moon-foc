@@ -1,0 +1,14 @@
+///|
+/// examples/speed_loop — 速度外环 + 电流内环 + 机械模型的三环级联仿真。
+///
+/// 速度 PI 出 iq 给定，电流环出电压（带解耦前馈），电机电气模型出电流，
+/// 转矩送机械方程积分转速。打印转速阶跃与负载阶跃的读数。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+  "Duckweed/moon-foc/pi",
+}
