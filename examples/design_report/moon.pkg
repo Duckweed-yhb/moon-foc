@@ -1,0 +1,10 @@
+///|
+/// examples/design_report — 电流环整定报告：算出增益与裕度，再把增益接回闭环验证。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+}
