@@ -4,7 +4,7 @@
 
 MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控制器、简化电机模型，以及底层 SVPWM 调制与坐标变换。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象与离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、97 个用例全过、`check --deny-warn` 干净。
+面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。后端覆盖以本机 MoonBit 0.1.20261104 实测为准：wasm、wasm-gc、js、native 四个后端均可构建、106 个用例全过、`check --deny-warn` 干净。
 
 ## 安装
 
@@ -130,9 +130,30 @@ moon run examples/foc_sim --target native
 
 已实现并验证的边界：电流环 d/q 跟踪、电压限幅、PI 抗饱和、简化模型一阶动态。仍未实现（计划外）：转速环、dq 解耦补偿、无感观测器、真实 I/O 与 FFI。
 
+### 电流环整定
+
+`controller/design.mbt` 回答的是上一节的反问题：手上这台电机，增益取多少。被控对象按一阶 `P(s) = 1/(Ls + R)`，控制器 `C(s) = Kp + Ki/s`，取零极点对消 `Ki/Kp = R/L`，环路增益幅值化为 `|C·P| = Kp/(L·ω)`，交叉频率落在 `ω_c = Kp/(2πL)`、相位裕度 90°。所以带宽可以直接当设计输入：
+
+```moon
+let g = @controller.design_current_loop(0.5, 0.002, 800.0)  // R / L / 目标带宽 Hz
+// g.kp() → 10.05 V/A, g.ki() → 2513 V/(A·s)，Ki/Kp = 250 = R/L
+let fc = @controller.crossover_hz(0.5, 0.002, g.kp(), g.ki())        // → 800 Hz
+let pm = @controller.phase_margin_deg(0.5, 0.002, g.kp(), g.ki())    // → 90°
+let loss = @controller.delay_phase_loss_deg(fc, 50.0e-6)             // → 14.4°
+let after = @controller.margin_after_delay_deg(0.5, 0.002, g.kp(), g.ki(), 50.0e-6)  // → 75.6°
+```
+
+理想模型算出的 90° 只是起点，数字实现还有一拍延时（采样 + PWM 更新），相位按 `360·f_c·Ts` 下降。同一组参数把带宽抬到 4 kHz、`Ts = 50 µs`，延时吃掉 72°，实际只剩 18° —— 这就是「带宽能开到多高」的硬约束。`design_is_usable(..., ts, min_margin_deg)` 按计入延时后的裕度判断，门槛值由调用方按自己的规范给。
+
+`examples/design_report` 把这套流程走完一遍：先打印增益与裕度，再把同一组增益接回 `FocController` + `PmsmModel` 闭环。本机 native 实测（2026-11-14，工具链 0.1.20261104）：R=0.5 Ω、L=2 mH、Ts=50 µs、Vdc=48 V、目标带宽 800 Hz → Kp=10.053 V/A、Ki=2513.3 V/(A·s)、交叉频率 800 Hz、理想裕度 90°、延时损失 14.4°、计入延时 75.6°、45° 门槛下可用；闭环 iq 给定 2.0 A，20 ms 到 1.99999 A，0.2 s 稳态误差 2.2e-16。
+
+```
+moon run examples/design_report --target native
+```
+
 ## 测试
 
-CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-13 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 95 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
+CI（`.github/workflows/ci.yml`）跑四件事：`moon fmt --check`；`wasm-gc` / `js` / `native` 三个目标各自的 `check --deny-warn` + `build` + `test`；`moon run examples/demo --target native`；以及 `moon run examples/waveform --target native`。本机 2026-11-14 实测（工具链 0.1.20261104）：wasm、wasm-gc、js、native 四个后端 `moon test` 均为 106 passed / 0 failed，四个目标 `moon check --deny-warn` 全部干净退出。wasm 目标未进 CI 矩阵，只在本机实测。
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -144,7 +165,7 @@ moon check --deny-warn --target js
 moon test --target js          # 需要可用 node，CI 上由 runner 提供
 ```
 
-97 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，以及简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位。
+106 个用例覆盖：Clarke 三相平衡与正逆往返、θ=0 与 θ=π/2 的 Park、Park / 反 Park 往返、六扇区全范围扇区判断、线性区与过调制区作用时间、线性区 T1/T2 与三相占空比的手算绝对基准、占空比范围与各扇区顺序、角度归一化与极对数边界，20 组独立数值夹具（期望值由库外独立算出），PI 单轴调节器的比例 / 积分 / 限幅 / 抗饱和，控制器单拍链路一致性、闭环阶跃跟踪、输出限幅与坏采样隔离，简化电机模型的零电压保持、RL 一阶上升、极对数换算、三相电流和为零、非正极对数与非正电感钳位，以及电流环整定的 9 条回归（对消比例、交叉频率落在目标带宽、理想裕度 90°、延时损失换算、可用性判据计入延时、带宽单调性与裕度反向、偏离对消时裕度下降、非法输入钳位、无交叉频率返回 0）。
 
 ## 独立数值夹具
 

@@ -8,10 +8,12 @@ controller, a simplified motor model, plus SVPWM modulation and Clarke/Park tran
 Pure numerical core for field-oriented control: space-vector PWM (six-sector
 detection, T1/T2 active-vector timing, overmodulation clamping), Clarke /
 Park / inverse-Park transforms, angle conversion, a `controller/` closed
-current-loop object and a simplified `motor/` electrical model for offline
-simulation. No C FFI, no I/O. Verified locally with MoonBit 0.1.20261104:
-wasm, wasm-gc, js and native all build, run the demo and pass `moon test`
-(97/97 on each), with `moon check --deny-warn` clean on all four targets.
+current-loop object, a current-loop design layer that turns motor R/L plus a
+target bandwidth into PI gains, and a simplified `motor/` electrical model for
+offline simulation. No C FFI, no I/O. Verified locally with MoonBit
+0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
+`moon test` (106/106 on each), with `moon check --deny-warn` clean on all four
+targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
 and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
@@ -90,13 +92,50 @@ Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup, a
 the first-order dynamics of the simplified model. Not implemented (out of plan):
 speed loop, d/q decoupling compensation, sensorless observer, real I/O and FFI.
 
+### Current-loop design
+
+`controller/design.mbt` answers the inverse question: given the motor, what should
+the gains be. The plant is taken as first order `P(s) = 1/(Ls + R)` and the
+controller as `C(s) = Kp + Ki/s`; with zero-pole cancellation `Ki/Kp = R/L` the
+loop magnitude reduces to `|C·P| = Kp/(L·ω)`, so the crossover lands at
+`ω_c = Kp/(2πL)` with a 90° phase margin. Bandwidth therefore becomes a design
+input:
+
+```moon
+let g = @controller.design_current_loop(0.5, 0.002, 800.0)  // R / L / target Hz
+// g.kp() → 10.05 V/A, g.ki() → 2513 V/(A·s), Ki/Kp = 250 = R/L
+let fc = @controller.crossover_hz(0.5, 0.002, g.kp(), g.ki())        // → 800 Hz
+let pm = @controller.phase_margin_deg(0.5, 0.002, g.kp(), g.ki())    // → 90°
+let loss = @controller.delay_phase_loss_deg(fc, 50.0e-6)             // → 14.4°
+let after = @controller.margin_after_delay_deg(0.5, 0.002, g.kp(), g.ki(), 50.0e-6)  // → 75.6°
+```
+
+The 90° from the ideal model is only the starting point: a digital implementation
+also carries one sample of delay (sampling plus PWM update), costing `360·f_c·Ts`
+degrees. Pushing the same machine to 4 kHz with `Ts = 50 µs` burns 72° of that and
+leaves 18°, which is what actually caps the achievable bandwidth.
+`design_is_usable(..., ts, min_margin_deg)` judges against the post-delay margin;
+the threshold is up to the caller's own engineering rules.
+
+`examples/design_report` runs the whole flow: print the gains and margins, then feed
+the same gains back into `FocController` + `PmsmModel`. Native local run
+(2026-11-14, toolchain 0.1.20261104) with R=0.5 Ω, L=2 mH, Ts=50 µs, Vdc=48 V and a
+target bandwidth of 800 Hz gives Kp=10.053 V/A, Ki=2513.3 V/(A·s), crossover 800 Hz,
+ideal margin 90°, delay loss 14.4°, post-delay margin 75.6°, usable at a 45° floor;
+the closed loop reaches iq=1.99999 A at 20 ms for a 2.0 A reference and settles to a
+steady-state error of 2.2e-16 at 0.2 s.
+
+```
+moon run examples/design_report --target native
+```
+
 ## Test
 
 CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
-`moon run examples/demo --target native`. Local verification on 2026-11-13
+`moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 97 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 106 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -112,14 +151,19 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-97 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+106 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
 order, angle normalization, 20 independent numeric fixtures, single-axis PI
 proportional/integral/clamp/anti-windup, controller chain consistency and
-closed-loop step tracking, and the simplified motor model's first-order RL
-response, pole-pair scaling, zero three-phase sum, and clamping of non-positive pole pairs and inductance.
+closed-loop step tracking, the simplified motor model's first-order RL
+response, pole-pair scaling, zero three-phase sum, and clamping of non-positive
+pole pairs and inductance, plus 9 regressions on current-loop design (cancellation
+ratio, crossover at target bandwidth, 90° ideal margin, delay loss conversion,
+usability judged after delay, bandwidth monotonicity against margin, margin drop
+when cancellation is off, invalid-input clamping, zero crossover when the loop
+never crosses 0 dB).
 
 ## Independent numeric fixtures
 
