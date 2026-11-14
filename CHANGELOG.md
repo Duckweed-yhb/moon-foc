@@ -19,7 +19,20 @@
   ωe=200 时 5.95 ms → 1.5 ms、最大偏差 4.999 A → 4.9157 A；ωe=400 时 6.99 ms → 1.51 ms、
   7.0343 A → 4.9357 A；ωe=480 时 7.25 ms → 2.58 ms、8.1312 A → 4.9691 A。末拍都收敛到 5 A，
   PI 积分本来就会消掉稳态误差，差别在瞬态。
-- 测试数 125 → 133。
+- `motor/mechanical.mbt`：单惯量机械模型 `MechanicalModel`，按
+  `J·dωm/dt = Te − TL − B·ωm` 显式欧拉积分；`electromagnetic_torque` 按
+  `1.5·pp·(ψf·iq + (Ld − Lq)·id·iq)` 换算电磁转矩（SPMSM 凸极项自带）。`J` 非正夹到 1e-12、
+  负阻尼按 0、非正极对数按 1，转矩或步长非有限返回 0，转速钳非负。补 5 条回归。
+- `controller/speed.mbt`：速度外环。`design_speed_loop` 从 `J`、`Kt` 与目标带宽整定
+  `Kp = ω_bw·J/Kt`、`Ki = Kp·ω_bw/5`；`speed_bandwidth_ok` 检查速度环与电流环的带宽比值；
+  `SpeedController` 是带输出限幅的转速 PI（限幅自动排序，坏反馈输出零且不更新积分器，
+  `reset()` 清状态）。整定口径不对消机械极点 `B/J`：`B` 很小时对消会留下 ωn/(2ζ) 量级的
+  慢模态，负载阶跃后要几秒才回位，改成积分时间常数取带宽的五分之一。补 7 条回归。
+- `examples/speed_loop`：速度环 → 电流环 → 电气模型 → 电磁转矩 → 机械方程的级联仿真
+  （J=2e-3、B=5e-4、Kt=0.3、Vdc=48 V、Ts=0.1 ms、电流环 400 Hz、速度环 40 Hz、iq 限幅 ±8 A）。
+  本机 native 实测：0 → 100 rad/s 的 10% 时刻 8.7 ms、进 ±2% 带 83.5 ms、峰值 100.4662 rad/s；
+  1.0 s 加 1 N·m 负载最大跌落 1.5511 rad/s、20.5 ms 回带；末段稳在 100 rad/s、末拍 iq 3.5 A。
+- 测试数 125 → 133 → 145。
 
 - `controller/`：逐拍调用的 FOC 电流环控制器对象 `FocController`，链路为
   采样电流 → Clarke → Park → d/q 双 PI → 反 Park → SVPWM；复用 coord / pi / svpwm，

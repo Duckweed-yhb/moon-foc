@@ -10,10 +10,11 @@ detection, T1/T2 active-vector timing, overmodulation clamping), Clarke /
 Park / inverse-Park transforms, angle conversion, a `controller/` closed
 current-loop object, a current-loop design layer that turns motor R/L plus a
 target bandwidth into PI gains, two-phase current sampling (third-phase
-reconstruction plus ADC sample-window checks), and a simplified `motor/`
+reconstruction plus ADC sample-window checks), a speed outer loop with a
+single-inertia mechanical model, and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (133/133 on each), with `moon check --deny-warn` clean on all four
+`moon test` (145/145 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -92,7 +93,9 @@ let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref
   duties return zero together; `reset()` clears both d/q integrators.
 - `motor/` is an offline simplified PMSM model: R, Ld, Lq, ψf and pole pairs are
   parameterized; d/q first-order equations are integrated with explicit Euler, and
-  electrical speed is given externally (the model itself does not run a speed loop).
+  electrical speed is given externally. `motor/mechanical.mbt` adds a single-inertia
+  mechanical equation (`J·dωm/dt = Te − TL − B·ωm`) that integrates the torque from
+  the currents into speed for the speed loop.
 - `examples/foc_sim` steps the current loop on this simplified model at standstill,
   iq_ref=2.0 A, id_ref=0 A; the native local convergence numbers are listed in the
   opening paragraph above.
@@ -102,9 +105,10 @@ moon run examples/foc_sim --target native
 ```
 
 Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup,
-the first-order dynamics of the simplified model, and model-based decoupling
-feedforward. Not implemented (out of plan): speed loop, parameter identification,
-sensorless observer, real I/O and FFI.
+the first-order dynamics of the simplified model, model-based decoupling
+feedforward, the speed loop and the single-inertia mechanical equation. Not
+implemented (out of plan): sensorless observer, field weakening, four-quadrant
+operation, real I/O and FFI.
 
 ### Current-loop design
 
@@ -179,6 +183,55 @@ Limits: the feedforward uses nameplate model parameters, so any mismatch in
 no current prediction, and no dead-time term here; the module removes only these
 two known disturbances.
 
+### Speed loop and mechanical model
+
+The earlier sections stop at the current layer. `motor/mechanical.mbt` adds the
+mechanical equation and `controller/speed.mbt` builds the speed PI on top, so the
+two loops can run together as "speed PI hands out iq, current loop follows iq":
+
+```moon
+let mech = @motor.MechanicalModel::new(0.002, 0.0005, 4, 0.0)   // J / B / pole pairs / initial speed
+let te = @motor.electromagnetic_torque(id, iq, ld, lq, psi_f, pole_pairs)
+mech.step(te, 1.0, 1.0e-4)   // torque / load / step, J·dωm/dt = Te − TL − B·ωm
+
+let g = @controller.design_speed_loop(0.002, 0.0005, 0.3, 40.0)  // J / B / Kt / bandwidth Hz
+let sc = @controller.SpeedController::new(g.kp(), g.ki(), 1.0e-4, -8.0, 8.0)
+let iq_ref = sc.step(100.0, mech.omega_m())
+```
+
+The tuning rule differs from the current loop: the current loop cancels the
+electrical pole `R/L`, the speed loop does not cancel the mechanical pole. `B/J`
+is typically a few tenths of a rad/s, and cancelling it leaves the loop behaving
+like a pure integrator: all damping rides on `Kp` and one very slow mode remains.
+That number comes from a local run, not from theory - after a load step
+`examples/speed_loop` returned only to 98.3 rad/s within 1 s with iq already at its
+steady value, which looks like a steady-state error but is the slow mode still
+settling. The module instead puts the integral time constant at one fifth of the
+bandwidth: `Kp = ω_bw·J/Kt`, `Ki = Kp·ω_bw/5`.
+
+`examples/speed_loop` uses R=0.5 Ω, Ld=0.8 mH, Lq=1.2 mH, ψf=0.05 Wb, pp=4
+(Kt=0.3 N·m/A), J=2e-3 kg·m², B=5e-4, Vdc=48 V, Ts=0.1 ms, current loop 400 Hz,
+speed loop 40 Hz, iq limited to ±8 A. Native local run (2026-11-14, toolchain
+0.1.20261104):
+
+- 0 → 100 rad/s: 10 % point at 8.7 ms, ±2 % band at 83.5 ms, peak 100.4662 rad/s
+  (0.47 % overshoot), iq peak saturating at the 8 A limit.
+- 1 N·m load step at 1.0 s: maximum dip 1.5511 rad/s, back inside ±1 % after 20.5 ms.
+- Last 0.2 s: speed steady at 100 rad/s, final iq 3.5 A (1 N·m / Kt = 3.333 A plus
+  the damping term B·ω/Kt = 0.167 A).
+
+```
+moon run examples/speed_loop --target native
+```
+
+Limits: the mechanical model is a single inertia with linear friction only, and
+speed is clamped non-negative (no four-quadrant or reverse operation); step size
+stability is the caller's job. The speed loop has PI plus output limiting only -
+no acceleration feedforward, no observer, no field weakening. The electrical model
+in this example has no d/q cross-coupling, so the voltage feedforward adds back-EMF
+only; injecting `vd_ff` would feed the model a disturbance it does not have and
+falsify the readings.
+
 ### Current sampling
 
 The three phase currents sum to zero at every instant, so production hardware
@@ -236,7 +289,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 133 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 145 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -252,7 +305,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-133 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+145 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -268,7 +321,7 @@ never crosses 0 dB), plus 12 regressions on current sampling (reconstruction clo
 the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
 check including invalid tolerances, window margin as duty and period vary, invalid
 window configuration rejected, sample-pair ranking, no candidate when all phases
-are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond), plus 8 regressions on decoupling feedforward (back-EMF equal to ωe·ψf with zero speed and non-finite inputs degrading to zero, zero feedforward at standstill, the signs of the voltage equation including a negative vq shift when id is negative, a linear-region sum returned untouched, a magnitude clamp that keeps the direction, a bus-unknown case that only sums, and non-finite components kept out of the command).
+are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond), plus 8 regressions on decoupling feedforward (back-EMF equal to ωe·ψf with zero speed and non-finite inputs degrading to zero, zero feedforward at standstill, the signs of the voltage equation including a negative vq shift when id is negative, a linear-region sum returned untouched, a magnitude clamp that keeps the direction, a bus-unknown case that only sums, and non-finite components kept out of the command), plus 5 regressions on the mechanical model (SPMSM and salient-pole torque conversion, torque-driven acceleration and coasting, load pulling the speed down, settling at the Te/B balance with 1e-6 tolerance, invalid step and non-finite inputs clamped, non-negative speed clamp and pole-pair scaling), plus 7 regressions on the speed loop (gains following inertia and bandwidth, zero gains without a torque constant or bandwidth, inertia clamping, the bandwidth ratio check, output sign following the error, limiting and a bad feedback sample producing zero without touching the integrator, and reset clearing state).
 
 ## Independent numeric fixtures
 
