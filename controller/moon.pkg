@@ -12,6 +12,8 @@
 /// 单/双电阻采样的窗口余量与采样相选择。
 /// feedforward.mbt 是电压输出侧的前馈：d/q 解耦项与反电动势按模型直接算出，
 /// 与 PI 输出相加后按线性调制区限幅（保方向缩放，不是逐轴钳位）。
+/// speed.mbt 是外侧的转速 PI：从 J / Kt 与目标带宽整定增益，输出 iq 给定，
+/// 积分时间常数取带宽的五分之一（不对消机械极点 B/J）。
 supported_targets = "wasm+wasm-gc+js+native"
 
 import {
