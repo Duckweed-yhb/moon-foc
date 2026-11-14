@@ -14,7 +14,7 @@ reconstruction plus ADC sample-window checks), a speed outer loop with a
 single-inertia mechanical model, and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (145/145 on each), with `moon check --deny-warn` clean on all four
+`moon test` (151/151 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -106,9 +106,10 @@ moon run examples/foc_sim --target native
 
 Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup,
 the first-order dynamics of the simplified model, model-based decoupling
-feedforward, the speed loop and the single-inertia mechanical equation. Not
-implemented (out of plan): sensorless observer, field weakening, four-quadrant
-operation, real I/O and FFI.
+feedforward, the speed loop and the single-inertia mechanical equation, and a
+steady-state field-weakening reference derived from the voltage limit. Not
+implemented (out of plan): sensorless observer, four-quadrant operation, real
+I/O and FFI.
 
 ### Current-loop design
 
@@ -227,10 +228,36 @@ moon run examples/speed_loop --target native
 Limits: the mechanical model is a single inertia with linear friction only, and
 speed is clamped non-negative (no four-quadrant or reverse operation); step size
 stability is the caller's job. The speed loop has PI plus output limiting only -
-no acceleration feedforward, no observer, no field weakening. The electrical model
-in this example has no d/q cross-coupling, so the voltage feedforward adds back-EMF
-only; injecting `vd_ff` would feed the model a disturbance it does not have and
-falsify the readings.
+no acceleration feedforward, no observer, no field-weakening regulator. The
+electrical model in this example has no d/q cross-coupling, so the voltage
+feedforward adds back-EMF only; injecting `vd_ff` would feed the model a
+disturbance it does not have and falsify the readings.
+
+### Field weakening
+
+Above base speed, `ωe·ψf` alone fills the voltage budget, and a PI pushing harder
+just runs into the clamp. `controller/field_weakening.mbt` inverts the steady-state
+voltage equations `vd = −ωe·Lq·iq`, `vq = ωe·(Ld·id + ψf)` under
+`vd² + vq² ≤ Vmax²` to produce a d-axis reference:
+
+```moon
+let h = @controller.flux_headroom(600.0, 0.0008, 0.0012, 0.05, 0.0, 27.7128)  // → −0.003812 Wb
+let id = @controller.field_weakening_id(600.0, 0.0008, 0.0012, 0.05, 0.0, 27.7128, -8.0)
+// → −4.7650 A
+```
+
+`flux_headroom = sqrt(Vmax² − (ωe·Lq·iq)²)/|ωe| − ψf`. A positive value means the
+machine is still in the constant-torque region and `field_weakening_id` returns 0;
+only a negative value pushes `id = headroom/Ld`, clamped into `[id_min, 0]`. q-axis
+load tightens the budget: at ωe=600 with iq=5 A, `ωe·Lq·iq` takes 3.6 V first and
+weakening reaches −5.2542 A. When no solution exists
+(`Vmax² − (ωe·Lq·iq)² ≤ 0`), the function returns the current floor instead of
+inventing a root.
+
+Limits: steady-state approximation only - no resistive drop, no `di/dt`, no phase
+lag from current-loop bandwidth, and no optimal current allocation inside the
+weakening region. With `vmax = Vdc/√3` the boundary coincides with the linear region
+of `svpwm`.
 
 ### Current sampling
 
@@ -289,7 +316,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 145 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 151 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -305,7 +332,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-145 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+151 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -321,7 +348,7 @@ never crosses 0 dB), plus 12 regressions on current sampling (reconstruction clo
 the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
 check including invalid tolerances, window margin as duty and period vary, invalid
 window configuration rejected, sample-pair ranking, no candidate when all phases
-are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond), plus 8 regressions on decoupling feedforward (back-EMF equal to ωe·ψf with zero speed and non-finite inputs degrading to zero, zero feedforward at standstill, the signs of the voltage equation including a negative vq shift when id is negative, a linear-region sum returned untouched, a magnitude clamp that keeps the direction, a bus-unknown case that only sums, and non-finite components kept out of the command), plus 5 regressions on the mechanical model (SPMSM and salient-pole torque conversion, torque-driven acceleration and coasting, load pulling the speed down, settling at the Te/B balance with 1e-6 tolerance, invalid step and non-finite inputs clamped, non-negative speed clamp and pole-pair scaling), plus 7 regressions on the speed loop (gains following inertia and bandwidth, zero gains without a torque constant or bandwidth, inertia clamping, the bandwidth ratio check, output sign following the error, limiting and a bad feedback sample producing zero without touching the integrator, and reset clearing state).
+are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, a bad pair leaving the PI state untouched, plus 7 regressions on overmodulation geometry (boundary equal to the inscribed radius on a sector axis, two thirds of the bus at a vertex, analytic boundary matching the clamped magnitude, projection preserving direction, a linear-region vector returned untouched, and a clipping ratio that is zero inside the linear region and positive beyond), plus 8 regressions on decoupling feedforward (back-EMF equal to ωe·ψf with zero speed and non-finite inputs degrading to zero, zero feedforward at standstill, the signs of the voltage equation including a negative vq shift when id is negative, a linear-region sum returned untouched, a magnitude clamp that keeps the direction, a bus-unknown case that only sums, and non-finite components kept out of the command), plus 5 regressions on the mechanical model (SPMSM and salient-pole torque conversion, torque-driven acceleration and coasting, load pulling the speed down, settling at the Te/B balance with 1e-6 tolerance, invalid step and non-finite inputs clamped, non-negative speed clamp and pole-pair scaling), plus 7 regressions on the speed loop (gains following inertia and bandwidth, zero gains without a torque constant or bandwidth, inertia clamping, the bandwidth ratio check, output sign following the error, limiting and a bad feedback sample producing zero without touching the integrator, and reset clearing state), plus 6 regressions on field weakening (positive headroom below base speed with a zero id, negative headroom above base speed producing headroom/Ld, q-axis current tightening the budget and deepening the weakening, the id clamped to the current floor, an unsolvable budget returning that floor, and zero speed, zero bus, zero inductance or non-finite inputs returning zero).
 
 ## Independent numeric fixtures
 

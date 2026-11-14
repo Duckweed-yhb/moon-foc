@@ -32,7 +32,13 @@
   （J=2e-3、B=5e-4、Kt=0.3、Vdc=48 V、Ts=0.1 ms、电流环 400 Hz、速度环 40 Hz、iq 限幅 ±8 A）。
   本机 native 实测：0 → 100 rad/s 的 10% 时刻 8.7 ms、进 ±2% 带 83.5 ms、峰值 100.4662 rad/s；
   1.0 s 加 1 N·m 负载最大跌落 1.5511 rad/s、20.5 ms 回带；末段稳在 100 rad/s、末拍 iq 3.5 A。
-- 测试数 125 → 133 → 145。
+- `controller/field_weakening.mbt`：电压极限下的弱磁给定。`flux_headroom` 按
+  `sqrt(Vmax² − (ωe·Lq·iq)²)/|ωe| − ψf` 算 d 轴磁链余量，`field_weakening_id` 在余量为负时
+  给 `headroom/Ld` 并钳在 `[id_min, 0]`；母线余量不足解方程时直接给电流下限，非有限输入
+  一律返回 0。实测口径（Ld 0.8 mH、Lq 1.2 mH、ψf 0.05 Wb、Vmax 27.7128 V）：ωe=400 时余量
+  +0.0193 Wb、id 给 0；ωe=600 时 −4.7650 A；同转速带 iq=5 A 时 −5.2542 A；id_min 收到 −3 A
+  时候选值停在 −3 A。补 6 条回归。
+- 测试数 125 → 133 → 145 → 151。
 
 - `controller/`：逐拍调用的 FOC 电流环控制器对象 `FocController`，链路为
   采样电流 → Clarke → Park → d/q 双 PI → 反 Park → SVPWM；复用 coord / pi / svpwm，
