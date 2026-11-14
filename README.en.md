@@ -13,7 +13,7 @@ target bandwidth into PI gains, two-phase current sampling (third-phase
 reconstruction plus ADC sample-window checks), and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (114/114 on each), with `moon check --deny-warn` clean on all four
+`moon test` (118/118 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -154,8 +154,27 @@ an offset, a broken channel or two unsynchronised channels, and
 `currents_consistent` turns that into a boolean against a tolerance.
 
 `FocController::step_from_two_phases(ia, ib, θe, id_ref, iq_ref)` pushes the
-reconstructed ic into one current-loop tick. The caller chooses the sampled phases
-from `pick_sample_pair`; the controller never picks them implicitly.
+reconstructed ic into one current-loop tick, with the sampled phases fixed to a/b.
+When the pair changes tick to tick, `pair_currents(pair, i1, i2)` scatters the two
+measurements back onto a/b/c and `FocController::step_from_pair(pair, i1, i2, θe,
+id_ref, iq_ref)` drives a tick directly. The caller always chooses the pair; the
+controller never picks it implicitly. An out-of-range index, a repeated phase or a
+non-finite sample is rejected at the entry with a zero tuple instead of being fed
+into the PI as a genuine zero current.
+
+`examples/sampling_loop` closes the loop on two-phase sampling: one motor and one
+set of design gains run two trajectories, A on three-phase ground truth and B on
+two measured phases with the pair picked from the previous tick's duties. Local
+native readings (2026-11-14): `|iq(A) − iq(B)|` stays at 0 across the whole run,
+both settle at 1.9999999999999998 A by 0.2 s, the pair switches once (`(0,1)` to
+`(0,2)`), and no tick lacks a usable pair. Adding a 0.02 A offset on phase a puts
+iq at 1.98845 A, 0.01155 A off the reference; with only two sensors the residual
+stays 0 - the third phase is computed, so that check cannot see a single-channel
+offset; with an extra true phase c the residual reads 0.02 A.
+
+```
+moon run examples/sampling_loop --target native
+```
 
 `examples/design_report` prints these readings at the end: for duties
 `(0.52, 0.31, 0.88)`, `Ts = 50 µs` and a 1.5 µs settling floor, the margins are
@@ -168,7 +187,7 @@ CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js`
 `native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
 `moon run examples/demo --target native`. Local verification on 2026-11-14
 (toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 114 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
+report 118 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
 four targets. The wasm target is not in the CI matrix and is only verified
 locally.
 
@@ -184,7 +203,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-114 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+118 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
@@ -196,11 +215,11 @@ pole pairs and inductance, plus 9 regressions on current-loop design (cancellati
 ratio, crossover at target bandwidth, 90° ideal margin, delay loss conversion,
 usability judged after delay, bandwidth monotonicity against margin, margin drop
 when cancellation is off, invalid-input clamping, zero crossover when the loop
-never crosses 0 dB), plus 8 regressions on current sampling (reconstruction closing
+never crosses 0 dB), plus 12 regressions on current sampling (reconstruction closing
 the three-phase sum, non-finite inputs clamped to zero, the sensor consistency
 check including invalid tolerances, window margin as duty and period vary, invalid
 window configuration rejected, sample-pair ranking, no candidate when all phases
-are too narrow, and the two-phase step matching the three-phase step bit for bit).
+are too narrow, the two-phase step matching the three-phase step bit for bit, phase-order restoration from a pair, a malformed pair or bad sample rejected, any pair matching the three-phase step, and a bad pair leaving the PI state untouched).
 
 ## Independent numeric fixtures
 
