@@ -1,0 +1,14 @@
+///|
+/// examples/feedforward_loop — 电流环加不加解耦前馈的稳态误差对比。
+///
+/// 纯计算示例：模型来自 motor 包，PI 与整定来自 pi / controller，前馈来自
+/// controller/feedforward.mbt。打印三个转速点的 iq 稳态误差。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+  "Duckweed/moon-foc/pi",
+}
