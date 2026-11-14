@@ -1,0 +1,14 @@
+///|
+/// examples/web_demo — 把闭环仿真的结果交给浏览器画图
+///
+/// 只支持 js：产物被 docs/demo/index.html 直接加载，页面读控制台里以
+/// `DATA ` 开头的行，按 panel 字段分图。
+supported_targets = "js"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+  "Duckweed/moon-foc/pi",
+}
