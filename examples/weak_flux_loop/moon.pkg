@@ -1,0 +1,15 @@
+///|
+/// examples/weak_flux_loop — 弱磁与速度环联动的高转速仿真。
+///
+/// 转速给定爬到基速以上，d 轴给定由 field_weakening_id 按电压极限给出，
+/// q 轴仍由速度 PI 出。同一组参数跑两遍：一遍关弱磁（id 恒 0），一遍开弱磁，
+/// 对比两边的转速上限、id 深度与电压利用率。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+  "Duckweed/moon-foc/pi",
+}
