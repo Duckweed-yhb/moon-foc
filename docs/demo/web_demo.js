@@ -854,7 +854,7 @@ function _M0MP38Duckweed10moon_2dfoc5motor9PmsmModel4step(self, vd, vq, dt) {
     return undefined;
   }
   const did = (vd - self.r * self.id) / self.ld;
-  const diq = (vq - self.r * self.iq - self.omega_e * self.psi_f) / self.lq;
+  const diq = (vq - self.r * self.iq - self.omega_e * (self.psi_f + self.ld * self.id)) / self.lq;
   self.id = self.id + did * dt;
   self.iq = self.iq + diq * dt;
   self.theta_e = _M0FP38Duckweed10moon_2dfoc5angle16normalize__angle(self.theta_e + self.omega_e * dt);

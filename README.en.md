@@ -1,4 +1,4 @@
-# moon-foc
+﻿# moon-foc
 
 [中文](./README.md) · English
 
@@ -14,7 +14,7 @@ reconstruction plus ADC sample-window checks), a speed outer loop with a
 single-inertia mechanical model, and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (151/151 on each), with `moon check --deny-warn` clean on all four
+`moon test` (152/152 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
@@ -228,7 +228,8 @@ moon run examples/speed_loop --target native
 Limits: the mechanical model is a single inertia with linear friction only, and
 speed is clamped non-negative (no four-quadrant or reverse operation); step size
 stability is the caller's job. The speed loop has PI plus output limiting only -
-no acceleration feedforward, no observer, no field-weakening regulator. The
+no acceleration feedforward, no observer; field weakening is not inside the
+speed loop but attached through `field_weakening_id` (see the next section). The
 electrical model in this example has no d/q cross-coupling, so the voltage
 feedforward adds back-EMF only; injecting `vd_ff` would feed the model a
 disturbance it does not have and falsify the readings.
@@ -258,6 +259,49 @@ Limits: steady-state approximation only - no resistive drop, no `di/dt`, no phas
 lag from current-loop bandwidth, and no optimal current allocation inside the
 weakening region. With `vmax = Vdc/√3` the boundary coincides with the linear region
 of `svpwm`.
+
+### Field weakening in the speed loop
+
+The previous section only answers "given speed and iq, what id should be". 
+`examples/weak_flux_loop` closes that into the speed loop: the reference ramps to
+170 rad/s at 150 rad/s², the q axis comes from the speed PI, the d axis runs
+`field_weakening_id` every step, and the electrical model uses the flux
+`ψf + Ld·id` on the q axis. The same parameters run twice with only the weakening
+switch flipped:
+
+```
+moon run examples/weak_flux_loop --target native
+```
+
+Native readings on this machine (2026-11-15, toolchain 0.1.20261104):
+
+- weakening off (id fixed at 0): speed stalls at 137.99 rad/s, iq 0.23 A at the
+  tail, voltage peak 27.71 V, 11150 steps sitting on the limit.
+- weakening on: ceiling 156.54 rad/s, tail id −8 A and iq 0.2452 A, same 27.71 V
+  voltage peak.
+- the ceiling moves up by 18.55 rad/s, or 13.44 %; the deepest id is −8 A, exactly
+  the `id_min` clamp.
+- tail tracking: 156.54 of 170 rad/s with weakening, 137.99 of 170 rad/s without -
+  neither reaches the reference, 48 V simply runs out at the top of the linear
+  region.
+
+The weakening-off ceiling matches `Vmax/(pp·ψf) = 27.7128/(4·0.05) = 138.56 rad/s`;
+the difference comes from `R·iq` and vector limiting. With weakening the flux drops
+to `0.05 − 0.0008·8 = 0.0436 Wb`, which by the same formula allows 158.9 rad/s, and
+the measured 156.54 again loses the rest to resistive drop.
+
+The model changed as well: the q-axis equation in `motor/` went from `ωe·ψf` to
+`ωe·(ψf + Ld·id)`. In the old form id had no effect on back-EMF at all, so
+weakening did nothing in simulation - without that term the two runs above would
+print the same number. The d axis still omits the `−ωe·Lq·iq` cross term, and
+torque is still `1.5·pp·ψf·iq` (surface-mount approximation, no reluctance torque),
+so the weakening depth reads optimistic against a real machine.
+
+Limits: only the "given speed, hit the voltage limit" layer is wired up. There is
+no MTPA / maximum-torque-per-voltage allocation in the weakening region, no
+closed-loop id tracking against the voltage margin, and no desaturation strategy;
+bus voltage and machine parameters come from example constants rather than online
+identification.
 
 ### Current sampling
 
