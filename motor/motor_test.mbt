@@ -101,3 +101,31 @@ test "non positive inductance is clamped above zero" {
   assert_true(m.id() == m.id() && m.id().abs() <= 1.0e308)
   assert_true(m.iq() == m.iq() && m.iq().abs() <= 1.0e308)
 }
+
+///|
+/// q 轴反电势里的磁链是 ψf + Ld·id：先把 id 拉到 4 A，再给转速、vq 置零，
+/// 稳态 iq 应为 −ωe·(ψf + Ld·id)/R。这一项丢了，弱磁在仿真里就不起作用。
+test "q axis flux includes d axis current" {
+  let m = make_model()
+  let r = 0.5
+  let ld = 0.001
+  let psi_f = 0.05
+  let dt = 1.0e-4
+  // 静止、vd = 2 V：id → vd/R = 4 A
+  let mut k = 0
+  while k < 3000 {
+    m.step(2.0, 0.0, dt)
+    k += 1
+  }
+  assert_true(near(m.id(), 4.0))
+  // 转到 ωe = 400 rad/s，vq 置零，iq 收到 −ωe·(ψf + Ld·id)/R
+  m.set_speed(100.0)
+  k = 0
+  while k < 3000 {
+    m.step(2.0, 0.0, dt)
+    k += 1
+  }
+  let flux = psi_f + ld * 4.0
+  let iq_ss = -(400.0 * flux) / r
+  assert_true((m.iq() - iq_ss).abs() < 1.0e-3)
+}

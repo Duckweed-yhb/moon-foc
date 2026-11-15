@@ -1,8 +1,13 @@
 // motor/motor.mbt — 简化 PMSM 电气模型。
 //
-// d/q 轴一阶方程（表面贴装近似，忽略 d/q 交叉耦合项）：
+// d/q 轴一阶方程：
 //   did/dt = (vd − R·id) / Ld
-//   diq/dt = (vq − R·iq − ωe·ψf) / Lq
+//   diq/dt = (vq − R·iq − ωe·(ψf + Ld·id)) / Lq
+//
+// q 轴反电势按交轴磁链 ψf + Ld·id 计：负 id 会把气隙磁链压下去，这正是弱磁
+// 能换转速的物理来源，不写这一项的话弱磁在仿真里不起作用。d 轴仍忽略
+// −ωe·Lq·iq 交叉项，与 `feedforward.decoupling_terms` 的完整式不同 ——
+// 仿真里只补模型确实拥有的项，别给被控对象注入它没有的电压。
 // 角度由电角速度积分：θe ← θe + ωe·dt，归一化到 [0, 2π)。
 //
 // 这是给闭环仿真和回归测试用的简化被控对象：参数化、可步进、可读出
@@ -16,7 +21,7 @@ pub struct PmsmModel {
   /// d/q 轴电感（亨利）。
   ld : Double
   lq : Double
-  /// 永磁磁链（韦伯），只进 q 轴反电势 ωe·ψf。
+  /// 永磁磁链（韦伯）；q 轴磁链取 ψf + Ld·id，负 id 即弱磁。
   psi_f : Double
   /// 极对数；电角速度 = 机械角速度 × 极对数。
   pole_pairs : Int32
@@ -82,7 +87,10 @@ pub fn PmsmModel::step(
     return
   }
   let did = (vd - self.r * self.id) / self.ld
-  let diq = (vq - self.r * self.iq - self.omega_e * self.psi_f) / self.lq
+  let diq = (
+      vq - self.r * self.iq - self.omega_e * (self.psi_f + self.ld * self.id)
+    ) /
+    self.lq
   self.id = self.id + did * dt
   self.iq = self.iq + diq * dt
   self.theta_e = @angle.normalize_angle(self.theta_e + self.omega_e * dt)
