@@ -1,4 +1,4 @@
-﻿# moon-foc
+# moon-foc
 
 [中文](./README.md) · English
 
@@ -14,7 +14,7 @@ reconstruction plus ADC sample-window checks), a speed outer loop with a
 single-inertia mechanical model, and a simplified `motor/`
 electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
 0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (152/152 on each), with `moon check --deny-warn` clean on all four
+`moon test` (156/156 on each), with `moon check --deny-warn` clean on all four
 targets.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
