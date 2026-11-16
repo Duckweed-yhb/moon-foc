@@ -145,6 +145,99 @@ test "non finite sample does not pollute the pi state" {
 }
 
 ///|
+test "vector clamp keeps the direction and caps the magnitude" {
+  // 模长 5 的矢量（3, 4）：限幅 5 时原样返回
+  match @controller.clamp_voltage_vector(3.0, 4.0, 5.0) {
+    (vd, vq) => assert_true(near(vd, 3.0) && near(vq, 4.0))
+  }
+  // 限幅 2.5：方向不变（vq/vd = 4/3），模长正好压到 2.5
+  match @controller.clamp_voltage_vector(3.0, 4.0, 2.5) {
+    (vd, vq) => {
+      assert_true(near(vd, 1.5) && near(vq, 2.0))
+      assert_true(near((vd * vd + vq * vq).sqrt(), 2.5))
+    }
+  }
+  // 限幅非正 / 非有限：不启用，原样返回
+  match @controller.clamp_voltage_vector(3.0, 4.0, 0.0) {
+    (vd, vq) => assert_true(near(vd, 3.0) && near(vq, 4.0))
+  }
+  // 坏数不进调制链路
+  let nan = 0.0 / 0.0
+  match @controller.clamp_voltage_vector(nan, 4.0, 5.0) {
+    (vd, vq) => assert_true(near(vd, 0.0) && near(vq, 0.0))
+  }
+}
+
+///|
+test "vector limit keeps both axes inside the linear modulation range" {
+  let dt = 1.0e-4
+  let vdc = 24.0
+  let v_linear = vdc / 3.0.sqrt()
+  // 每轴 ±12 V，合成矢量可达 √2·12 ≈ 16.97 V > 13.86 V
+  let ctrl = @controller.FocController::new_limited(
+    10.0, 100.0, 10.0, 100.0, dt, vdc, -12.0, 12.0, v_linear,
+  )
+  let mut k = 0
+  while k < 200 {
+    let (_, _, vd, vq, _, _, _) = ctrl.step(0.0, 0.0, 0.0, 0.0, 5.0, 5.0)
+    let mag = (vd * vd + vq * vq).sqrt()
+    assert_true(mag <= v_linear + 1.0e-9)
+    // 换成调制比看：不进过调制区
+    let (valpha, vbeta) = @coord.inv_park(vd, vq, 0.0)
+    assert_true(@svpwm.modulation_index(valpha, vbeta, vdc) <= 1.0 + 1.0e-9)
+    k += 1
+  }
+  assert_true(ctrl.voltage_magnitude_limit() == v_linear)
+}
+
+///|
+test "plain per axis limit lets the vector exceed the linear range" {
+  // 同一组参数、每轴仍限 ±12 V、不启用矢量限幅：给定大误差时两轴同时顶边，
+  // 合成 16.97 V 已经越过 13.86 V 的线性边界，交给 SVPWM 就是过调制。
+  let ctrl = @controller.FocController::new(
+    10.0, 100.0, 10.0, 100.0, 1.0e-4, 24.0, -12.0, 12.0,
+  )
+  let (_, _, vd, vq, _, _, _) = ctrl.step(0.0, 0.0, 0.0, 0.0, 5.0, 5.0)
+  let (valpha, vbeta) = @coord.inv_park(vd, vq, 0.0)
+  assert_true(@svpwm.modulation_index(valpha, vbeta, 24.0) > 1.0)
+  assert_true(ctrl.voltage_magnitude_limit() == 0.0)
+}
+
+///|
+test "vector saturation recalculates the integrator instead of winding up" {
+  let dt = 1.0e-4
+  let vdc = 24.0
+  let v_linear = vdc / 3.0.sqrt()
+  // 每轴限幅放到 ±100 V：只靠条件积分时两轴都不会顶边，积分照常累积，
+  // 但合成矢量早已被裁在 13.86 V - 这是旧实现看不出来的 windup。
+  let limited = @controller.FocController::new_limited(
+    10.0, 100.0, 10.0, 100.0, dt, vdc, -100.0, 100.0, v_linear,
+  )
+  let plain = @controller.FocController::new(
+    10.0, 100.0, 10.0, 100.0, dt, vdc, -100.0, 100.0,
+  )
+  let mut k = 0
+  let mut integ_at_100 = 0.0
+  while k < 200 {
+    let (_, _, vd, vq, _, _, _) = limited.step(0.0, 0.0, 0.0, 0.0, 1.5, 1.5)
+    let mag = (vd * vd + vq * vq).sqrt()
+    assert_true(mag <= v_linear + 1.0e-9)
+    let (_, _, vd_p, vq_p, _, _, _) = plain.step(0.0, 0.0, 0.0, 0.0, 1.5, 1.5)
+    let (valpha, vbeta) = @coord.inv_park(vd_p, vq_p, 0.0)
+    assert_true(@svpwm.modulation_index(valpha, vbeta, vdc) > 1.0)
+    if k == 99 {
+      integ_at_100 = limited.d_integral()
+    }
+    k += 1
+  }
+  // 回算后积分项停住，不再随采样拍增长
+  assert_true((limited.d_integral() - integ_at_100).abs() < 1.0e-9)
+  assert_true(limited.d_integral().abs() <= v_linear + 10.0 * 1.5 + 1.0e-9)
+  // 旧实现同一组输入下积分项一直在涨
+  assert_true(plain.d_integral() > integ_at_100)
+}
+
+///|
 test "reset clears both integrators" {
   let dt = 1.0e-4
   let ctrl = @controller.FocController::new(
