@@ -49,6 +49,22 @@ pub fn Pi::integral(self : Pi) -> Double {
 }
 
 ///|
+/// 比例增益（回算抗饱和要用它把目标输出折回积分项）。
+pub fn Pi::kp(self : Pi) -> Double {
+  return self.kp
+}
+
+///|
+/// 直接改写积分项。给「输出被外部限幅、按限幅后的值回算」这类退饱和逻辑用：
+/// 外部知道这一拍真实能给出多少电压，就把 `integ` 拉回到 `target − kp·err`，
+/// 而不是让条件积分继续按未限幅的误差累积。非有限值忽略。
+pub fn Pi::set_integral(self : Pi, v : Double) -> Unit {
+  if pi_finite(v) {
+    self.integ = v
+  }
+}
+
+///|
 /// 清空积分器（重新使能、切换模式时调用）。
 pub fn Pi::reset(self : Pi) -> Unit {
   self.integ = 0.0
