@@ -88,14 +88,23 @@ pub fn apply_feedforward(
   }
   let vd = vd_pi + vd_ff
   let vq = vq_pi + vq_ff
+  if !(ff_finite(vd) && ff_finite(vq)) {
+    return (0.0, 0.0)
+  }
   if !(ff_finite(vdc) && vdc > 0.0) {
     return (vd, vq)
   }
   let limit = vdc / 3.0.sqrt()
-  let mag = (vd * vd + vq * vq).sqrt()
-  if !ff_finite(mag) || mag <= limit {
+  // Normalize before squaring: finite components may overflow when squared.
+  let largest = if vd.abs() > vq.abs() { vd.abs() } else { vq.abs() }
+  if largest == 0.0 {
     return (vd, vq)
   }
-  let scale = limit / mag
-  (vd * scale, vq * scale)
+  let d = vd / largest
+  let q = vq / largest
+  let norm = (d * d + q * q).sqrt()
+  if largest <= limit / norm {
+    return (vd, vq)
+  }
+  (d * (limit / norm), q * (limit / norm))
 }

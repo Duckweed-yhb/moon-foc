@@ -1,5 +1,7 @@
 # moon-foc
 
+> Working-tree verification (2026-11-17): native 159/159; js and wasm-gc 159/159. Native strict checks and formatting pass. These fixes are not yet published; wasm was not rerun in this round.
+
 [中文](./README.md) · English
 
 PMSM field-oriented control numerical library in MoonBit: a closed current-loop
@@ -12,17 +14,14 @@ current-loop object, a current-loop design layer that turns motor R/L plus a
 target bandwidth into PI gains, two-phase current sampling (third-phase
 reconstruction plus ADC sample-window checks), a speed outer loop with a
 single-inertia mechanical model, and a simplified `motor/`
-electrical model for offline simulation. No C FFI, no I/O. Verified locally with MoonBit
-0.1.20261104: wasm, wasm-gc, js and native all build, run the demo and pass
-`moon test` (156/156 on each), with `moon check --deny-warn` clean on all four
-targets.
+electrical model for offline simulation. No C FFI, no I/O. Current working-tree verification is listed above.
 On the simplified model, `examples/foc_sim` holds id_ref=0, iq_ref=2.0 A: a
 native local run on 2026-11-13 tracks iq to 1.9999975 A within 20 ms with id=0,
 and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.14` (Latest 0.1.14, MIT,
+Published to mooncakes as `Duckweed/moon-foc@0.1.14` (release 0.1.14, MIT,
 published 2026-11-17):
 
 ```
@@ -294,7 +293,7 @@ The model changed as well: the q-axis equation in `motor/` went from `ωe·ψf` 
 `ωe·(ψf + Ld·id)`. In the old form id had no effect on back-EMF at all, so
 weakening did nothing in simulation - without that term the two runs above would
 print the same number. The d axis still omits the `−ωe·Lq·iq` cross term, and
-torque is still `1.5·pp·ψf·iq` (surface-mount approximation, no reluctance torque),
+the separate torque helper includes the `(Ld-Lq)·id·iq` reluctance term,
 so the weakening depth reads optimistic against a real machine.
 
 Limits: only the "given speed, hit the voltage limit" layer is wired up. There is
@@ -358,7 +357,7 @@ moon run examples/sampling_loop --target native
 
 `examples/web_demo` evaluates a whole parameter grid and prints JSON lines to the console (one `META` line with design readouts, one `DATA` line per panel); `docs/demo/index.html` captures those lines, draws them, and adds parameter sliders. Every number on the page comes from a function in `controller/` or `motor/` - the JavaScript never re-derives the model.
 
-The panel uses a precomputed grid: the build evaluates every step, and the slider only switches between precomputed cases. This rests on two measurements - the MoonBit JS artifact is a single IIFE with zero `export`s, mangled function names closed inside it, and the wasm-gc artifact reports only `_start` from `WebAssembly.Module.exports`. The page therefore has no callable handle, so live recomputation is not available on a pure static page.
+The demo uses a grid evaluated at build time. Sliders select stored results; this build does not expose a callable solver interface to the page.
 
 Three slider groups:
 
@@ -374,13 +373,7 @@ python -m http.server 8765             # run from the repo root, then open http:
 The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
-CI (`.github/workflows/ci.yml`) runs `moon fmt --check`, then a `wasm-gc` / `js` /
-`native` matrix of `check --deny-warn` + `build` + `test`, plus a real run of
-`moon run examples/demo --target native`. Local verification on 2026-11-14
-(toolchain 0.1.20261104): `moon test` on wasm, wasm-gc, js and native each
-report 151 passed / 0 failed, and `moon check --deny-warn` exits cleanly on all
-four targets. The wasm target is not in the CI matrix and is only verified
-locally.
+CI runs formatting, a wasm-gc / js / native matrix of strict checks, builds and tests, four native examples (demo, waveform, reject_demo, foc_sim), and release metadata checks. Current working-tree tests pass 159/159 on each of those three targets; wasm was not rerun in this round.
 
 ```
 moon check --deny-warn --target wasm-gc
@@ -394,7 +387,7 @@ moon check --deny-warn --target js
 moon test --target js
 ```
 
-151 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
+159 cases cover: Clarke balanced three-phase and round-trip, Park at θ=0 and
 θ=π/2, Park/inverse-Park round-trip, SVPWM sector detection across all six
 sectors, linear and overmodulation timing, a hand-computed absolute baseline for
 T1/T2 and the three-phase duties in the linear region, duty range and per-sector
