@@ -12,10 +12,10 @@
 
 | 项 | 申报书（2026-10-19） | 现在 |
 |---|---|---|
-| 版本 | 0.1.3 | **0.1.13**（mooncakes 最新；本轮本地改动未发布） |
-| 单测 | 36 | **95**（四个后端各 95） |
+| 版本 | 0.1.3 | **0.1.14**（mooncakes 最新，2026-11-17 发布） |
+| 单测 | 36 | **156**（四个后端各 156） |
 | 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端**（wasm 仅本机实测，未进 CI 矩阵） |
-| commits | 29 | 63（本地 main，领先 origin/main 7 个，未推送；提交数以 git log 为准） |
+| commits | 29 | 101（本地 main 与 origin/main 同步；提交数以 git log 为准） |
 | 包 | `svpwm/` `coord/` `angle/` | 增加 **`pi/`**、**`controller/`**、**`motor/`** |
 | 示例 | `examples/demo` | 增加 **`examples/waveform`**、**`examples/reject_demo`**、**`examples/foc_sim`** |
 | CI | check/build/test（wasm-gc）+ native/js 本地实测 | 三目标矩阵 `check --deny-warn` + build + test，示例真跑，发布元数据校验 |
@@ -43,14 +43,14 @@
 
 | 申报书原文 | 现状 | 说明 |
 |---|---|---|
-| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通，四后端各 84 测试 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
-| 「36 个单测」 | 84 | 新增包的测试 + 每轮修复补的回归用例 |
+| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通，四后端各 156 测试 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
+| 「36 个单测」 | 156 | 新增包的测试 + 每轮修复补的回归用例 |
 
 ## 四、验证证据（可复现）
 
 ```bash
 moon check --deny-warn --target wasm        # 四个目标逐个跑，下同
-moon test --target wasm                    # 84/84
+moon test --target wasm                    # 156/156
 moon run examples/demo --target native     # 变换与占空比数值
 moon run examples/waveform --target native # 七段式时序图
 moon run examples/reject_demo --target native  # 每条拒绝路径
@@ -63,7 +63,7 @@ moon run examples/foc_sim --target native  # 电流环闭环阶跃跟踪
 
 ## 五、发布状态
 
-- mooncakes：`Duckweed/moon-foc@0.1.13`（Latest）。
+- mooncakes：`Duckweed/moon-foc@0.1.14`（Latest，2026-11-17）。
 - GitHub tag 只到 **v0.1.3**，落后 10 个已发布版本。**以 mooncakes 上的版本为准**；
   tag 是早期手工打的，没有逐个补。
 

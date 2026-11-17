@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-11-17
+
 ### Added
 
 - `controller/FocController::new_limited(...)` 与 `controller/clamp_voltage_vector(vd, vq, v_max)`：d/q 电压按合成矢量幅值限幅，方向不变、只裁模长；`FocController::voltage_magnitude_limit()` 读出当前上限（0 表示不启用）。旧实现只有逐轴 `[v_min, v_max]`，两轴同时顶边时合成到 `√2·v_max`，SVPWM 在过调制区把 T1/T2 整体缩放，而 PI 以为指令原样生效。`pi/Pi` 补 `kp()` 与 `set_integral()`，裁幅时按裁完的指令回算积分项。传 0 或非有限值时退化成旧行为，已有调用方不受影响。
