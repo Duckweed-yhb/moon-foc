@@ -1,6 +1,6 @@
 name = "Duckweed/moon-foc"
 
-version = "0.1.13"
+version = "0.1.14"
 
 description = "PMSM field-oriented control numerical library: closed current-loop controller, simplified PMSM model, SVPWM modulation, Clarke/Park transforms and PI regulators"
 
