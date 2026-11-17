@@ -18,3 +18,10 @@ test "feedforward huge vector keeps direction" {
   assert_true((d - limit * 0.6).abs() < 1.0e-12)
   assert_true((q + limit * 0.8).abs() < 1.0e-12)
 }
+
+///|
+test "public vector limiter preserves huge finite vector direction" {
+  let (d, q) = @controller.clamp_voltage_vector(3.0e200, -4.0e200, 10.0)
+  assert_true((d - 6.0).abs() < 1.0e-12)
+  assert_true((q + 8.0).abs() < 1.0e-12)
+}

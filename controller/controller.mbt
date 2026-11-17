@@ -125,12 +125,17 @@ pub fn clamp_voltage_vector(
   if !(finite(v_max) && v_max > 0.0) {
     return (vd, vq)
   }
-  let mag = (vd * vd + vq * vq).sqrt()
-  if mag <= v_max || mag <= 0.0 {
+  let largest = if vd.abs() > vq.abs() { vd.abs() } else { vq.abs() }
+  if largest == 0.0 {
     return (vd, vq)
   }
-  let k = v_max / mag
-  (vd * k, vq * k)
+  let d = vd / largest
+  let q = vq / largest
+  let norm = (d * d + q * q).sqrt()
+  if largest <= v_max / norm {
+    return (vd, vq)
+  }
+  (d * (v_max / norm), q * (v_max / norm))
 }
 
 ///|

@@ -94,17 +94,5 @@ pub fn apply_feedforward(
   if !(ff_finite(vdc) && vdc > 0.0) {
     return (vd, vq)
   }
-  let limit = vdc / 3.0.sqrt()
-  // Normalize before squaring: finite components may overflow when squared.
-  let largest = if vd.abs() > vq.abs() { vd.abs() } else { vq.abs() }
-  if largest == 0.0 {
-    return (vd, vq)
-  }
-  let d = vd / largest
-  let q = vq / largest
-  let norm = (d * d + q * q).sqrt()
-  if largest <= limit / norm {
-    return (vd, vq)
-  }
-  (d * (limit / norm), q * (limit / norm))
+  clamp_voltage_vector(vd, vq, vdc / 3.0.sqrt())
 }
