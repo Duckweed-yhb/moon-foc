@@ -53,7 +53,8 @@ fn positive(x : Double) -> Bool {
 
 ///|
 /// Start from rest with empty integrators. The electrical model simulates back
-/// EMF and omits dq cross terms. The mechanical model clamps speed at zero.
+/// EMF with q-axis flux psi_f + Ld * id, and omits the d-axis cross term.
+/// The mechanical model clamps speed at zero.
 pub fn SpeedDrive::new(
   params : MotorParams,
   tuning : DriveTuning,
@@ -81,6 +82,11 @@ pub fn SpeedDrive::new(
     return Err(
       "supply voltage, sample period, bandwidths and current limit must be positive and finite",
     )
+  }
+  // The underlying plant clamps smaller inductances and inertia. Designing
+  // gains from the unclamped values would tune the controller for another motor.
+  if params.ld < 1.0e-9 || params.lq < 1.0e-9 || params.inertia < 1.0e-12 {
+    return Err("plant requires Ld and Lq >= 1e-9 H and inertia >= 1e-12 kg m^2")
   }
   let kt = 1.5 * params.pole_pairs.to_double() * params.magnet_flux
   let sg = @controller.design_speed_loop(

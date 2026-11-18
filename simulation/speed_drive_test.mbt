@@ -55,6 +55,17 @@ test "drive validates setup before simulation" {
   let t = drive_tuning()
   assert_true(@simulation.SpeedDrive::new({ ..p, pole_pairs: 0, }, t) is Err(_))
   assert_true(@simulation.SpeedDrive::new({ ..p, ld: 0.0, }, t) is Err(_))
+  for
+    params in [
+      { ..p, ld: 5.0e-10, },
+      { ..p, lq: 5.0e-10, },
+      { ..p, inertia: 5.0e-13, },
+    ] {
+    assert_true(@simulation.SpeedDrive::new(params, t) is Err(_))
+  }
+  assert_true(
+    @simulation.SpeedDrive::new({ ..p, ld: 1.0e-9, lq: 1.0e-9, }, t) is Ok(_),
+  )
   assert_true(
     @simulation.SpeedDrive::new({ ..p, inertia: 0.0 / 0.0, }, t) is Err(_),
   )
