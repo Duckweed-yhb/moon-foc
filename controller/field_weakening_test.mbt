@@ -107,3 +107,34 @@ test "exact voltage boundary cancels magnet flux before current limiting" {
     )
   }
 }
+
+///|
+test "headroom and weakening id agree while the budget is solvable" {
+  let ld = 0.0008
+  let lq = 0.0012
+  let psi = 0.05
+  let vmax = 27.7128
+  let floor = -20.0
+  let cases = [
+    (500.0, 0.0),
+    (600.0, 0.0),
+    (600.0, 5.0),
+    (800.0, 0.0),
+    (800.0, -3.0),
+  ]
+  for (speed, iq) in cases {
+    let headroom = @controller.flux_headroom(speed, ld, lq, psi, iq, vmax)
+    let id = @controller.field_weakening_id(speed, ld, lq, psi, iq, vmax, floor)
+    if headroom >= 0.0 {
+      assert_eq(id, 0.0)
+    } else {
+      assert_eq(id, headroom / ld)
+    }
+  }
+  // 电压预算被 q 轴反电势吃穿：id 落到电流下限，headroom 只报告抵消掉的永磁磁链。
+  assert_eq(@controller.flux_headroom(600.0, ld, lq, psi, -40.0, vmax), -psi)
+  assert_eq(
+    @controller.field_weakening_id(600.0, ld, lq, psi, -40.0, vmax, floor),
+    floor,
+  )
+}

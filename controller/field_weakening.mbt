@@ -9,8 +9,13 @@
 // 顶到边界，继续提速只能把 id 往负方向压，用 Ld·id 抵消一部分永磁磁链 - 这就是
 // 弱磁。这里把它写成两个函数：
 //
-//   flux_headroom = sqrt(Vmax² − (ωe·Lq·iq)²) / |ωe| − ψf
-//   id_ref        = flux_headroom / Ld（再钳到 [id_min, 0]）
+//   flux_headroom = sqrt(Vmax² − (ωe·Lq·iq)²) / |ωe| − ψf      （预算为负时返回 −ψf）
+//   id_ref        = flux_headroom / Ld，钳到 [id_min, 0]
+//
+// 这两条式子只在「电压预算非负、且 headroom/Ld 没被电流下限钳住」的区间等价。
+// q 轴反电势把电压预算吃穿（Vmax² − (ωe·Lq·iq)² < 0）时，`field_weakening_id`
+// 直接落到 id_min，`flux_headroom` 只返回 −ψf 作为「预算已耗尽」的标记，
+// 不能拿它反解 id - 那样得到的电流既不饱和、也没用到电流下限。
 //
 // 只覆盖线性调制区与稳态近似：没有算电阻压降、没有算动态项、没有电流环带宽
 // 之外的相位滞后；`vmax` 取 Vdc/√3 时与 `svpwm` 的线性区边界一致。
