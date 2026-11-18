@@ -45,13 +45,7 @@ pub fn flux_headroom(
   if ld <= 0.0 || vmax <= 0.0 || omega_e == 0.0 {
     return 0.0
   }
-  let speed = omega_e.abs()
-  let vq_term = speed * lq * iq
-  let square = vmax * vmax - vq_term * vq_term
-  if square <= 0.0 {
-    return -psi_f
-  }
-  square.sqrt() / speed - psi_f
+  available_flux(omega_e, lq, iq, vmax).unwrap_or(0.0) - psi_f
 }
 
 ///|
@@ -81,14 +75,11 @@ pub fn field_weakening_id(
     return 0.0
   }
   let floor = if id_min < 0.0 { id_min } else { 0.0 }
-  let speed = omega_e.abs()
-  let vq_term = speed * lq * iq
-  let square = vmax * vmax - vq_term * vq_term
-  // At equality, cancelling the magnet flux still satisfies the voltage limit.
-  if square < 0.0 {
-    return floor
+  let flux = match available_flux(omega_e, lq, iq, vmax) {
+    None => return floor
+    Some(value) => value
   }
-  let headroom = square.sqrt() / speed - psi_f
+  let headroom = flux - psi_f
   if headroom >= 0.0 {
     return 0.0
   }
@@ -98,6 +89,26 @@ pub fn field_weakening_id(
   } else {
     id
   }
+}
+
+///|
+fn available_flux(
+  omega_e : Double,
+  lq : Double,
+  iq : Double,
+  vmax : Double,
+) -> Double? {
+  let speed = omega_e.abs()
+  let transverse = if iq == 0.0 { 0.0 } else { (lq * iq).abs() }
+  let budget = vmax / speed
+  if transverse > budget {
+    return None
+  }
+  if transverse == budget {
+    return Some(0.0)
+  }
+  let fraction = transverse / budget
+  Some(budget * ((1.0 - fraction) * (1.0 + fraction)).sqrt())
 }
 
 ///|

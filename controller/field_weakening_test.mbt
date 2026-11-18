@@ -138,3 +138,19 @@ test "headroom and weakening id agree while the budget is solvable" {
     floor,
   )
 }
+
+///|
+test "scaling speed and voltage together preserves weakening current" {
+  for scale in [1.0e-180, 1.0, 1.0e180] {
+    let id = @controller.field_weakening_id(
+      scale,
+      1.0,
+      1.0,
+      5.0,
+      3.0,
+      5.0 * scale,
+      -8.0,
+    )
+    assert_true((id + 1.0).abs() < 1.0e-12)
+  }
+}
