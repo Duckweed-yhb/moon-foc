@@ -14,12 +14,12 @@
 ///
 /// 运行：`moon run examples/speed_loop --target native`
 fn main {
-  run_case(40.0)
-  run_case(20.0)
+  ignore(run_case(40.0))
+  ignore(run_case(20.0))
 }
 
 ///|
-fn run_case(speed_hz : Double) -> Unit {
+fn run_case(speed_hz : Double) -> (Double, Double) {
   let r = 0.5
   let ld = 0.0008
   let lq = 0.0012
@@ -209,6 +209,7 @@ fn run_case(speed_hz : Double) -> Unit {
     round4(b * omega_ref / kt) +
     " A。",
   )
+  (dip, t_recover)
 }
 
 ///|

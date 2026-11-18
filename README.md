@@ -192,6 +192,8 @@ let iq_ref = sc.step(100.0, mech.omega_m())
 - 1.0 s 加 1 N·m 负载：最大跌落 1.5511 rad/s，20.5 ms 回到 ±1% 带。
 - 末段 0.2 s 转速稳在 100 rad/s，末拍 iq = 3.5 A（1 N·m / Kt = 3.333 A，再加阻尼项 B·ω/Kt = 0.167 A）。
 
+保持同一电机、负载和 400 Hz 电流环，将速度环带宽降到 20 Hz。此时最大跌速为 3.0639 rad/s，恢复用时 62.6 ms。两组均从施加负载时开始计时，在跌速达到最大值后，转速连续 1 ms 保持在目标的 ±1% 范围内时确认恢复。
+
 ```
 moon run examples/speed_loop --target native
 ```
