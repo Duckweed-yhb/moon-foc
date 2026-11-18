@@ -19,7 +19,16 @@ fn main {
 }
 
 ///|
-fn run_case(speed_hz : Double) -> (Double, Double) {
+priv struct SpeedResponse {
+  dip : Double
+  recovery : Double
+  first_entry : Double
+  iq_ref_peak : Double
+  iq_peak : Double
+}
+
+///|
+fn run_case(speed_hz : Double) -> SpeedResponse {
   let r = 0.5
   let ld = 0.0008
   let lq = 0.0012
@@ -171,17 +180,24 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
     }
   }
 
+  let response : SpeedResponse = {
+    dip,
+    recovery: t_recover,
+    first_entry: t_settle,
+    iq_ref_peak,
+    iq_peak,
+  }
   println(
     "① 0 → 100 rad/s：10% 时刻 " +
     round4(t_rise) +
     " s，进 ±2% 带 " +
-    round4(t_settle) +
+    round4(response.first_entry) +
     " s，峰值 " +
     round4(peak) +
     " rad/s，模型 iq 峰值 " +
-    round4(iq_peak) +
+    round4(response.iq_peak) +
     " A，iq 给定峰值 " +
-    round4(iq_ref_peak) +
+    round4(response.iq_ref_peak) +
     " A（给定限幅 " +
     iq_limit.to_string() +
     " A）",
@@ -190,9 +206,9 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
     "② 1.0 s 加 " +
     load.to_string() +
     " N·m：最大跌落 " +
-    round4(dip) +
+    round4(response.dip) +
     " rad/s，回到 ±1% 带用时 " +
-    round4(t_recover) +
+    round4(response.recovery) +
     " s",
   )
   println(
@@ -215,7 +231,7 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
     round4(b * omega_ref / kt) +
     " A。",
   )
-  (dip, t_recover)
+  response
 }
 
 ///|
