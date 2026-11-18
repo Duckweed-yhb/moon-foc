@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-11-19
+
+### Added
+
+- `simulation/SpeedDrive`：速度环 → 电流环 → PMSM 电气模型 → 机械方程的可复用级联仿真。`SpeedDrive::new(params, tuning)` 从静止、空积分器起步，`step(omega_ref, load_torque)` 推进一拍并给出 `DriveSample`（omega_m / id / iq / iq_ref / vd / vq / torque），`omega_m()` 读出当前转速；`MotorParams` 收 R、Ld、Lq、ψf、极对数、J、B，`DriveTuning` 收 Vdc、Ts、两环带宽与 iq 上限。此前同样的级联只在 `examples/speed_loop` 里手写，外部拿不到这个对象。
+- `examples/design_report`：前半段按 R、L 与目标带宽整定 d/q 轴增益并给出交叉频率、理想相位裕度、一拍延时的相位损失与实际裕度，后半段把同一组增益接回 `FocController` 在模型上跑时域，看 iq 是否收敛到给定。CI 里跑一遍。
+
+### Fixed
+
+- 弱磁在电压恰好等于极限时（`square == 0`）直接落 `id_min`：此时应当 `id = −ψf/Ld`（headroom 为 0），旧实现把边界当成「预算耗尽」，电流给到下限而电压根本没用满。改成 `square < 0` 才算耗尽，两个函数在边界上一致；补 500 / 600 / 800 rad/s 与上下限的回归。
+- `controller/available_flux` 此前直接算 `vmax² − (ωe·Lq·iq)²`：电压上百伏后中间量迅速变大，`sqrt` 之前就可能溢出或下溢。现在先把横向电压按 `vmax/|ωe|` 归一（`transverse / budget`），再用 `√((1−f)(1+f))` 还原，全程量级在 1 附近。
+- 电流环整定只按一个电感出增益：`Ld ≠ Lq` 时 q 轴带宽跟着偏。`SpeedDrive` 与 `examples/speed_loop` 现在 d、q 各按自己的电感调 `design_current_loop`。
+- `controller` 的设计层与相位裕度计算在 R、L、带宽为 0 或非有限时会产出 NaN / 除零：现在 R 归零、L 取 1e-9 下限、带宽非正直接返回 0 增益，相位裕度同样按安全值算。
+- `motor/` 的机械与电气模型不判非有限参数：J、B、ψf 为 NaN 或 Inf 时状态一拍就废，转速还能被积成负值。现在参数与状态先判有限，转速下限钳到 0。
+- `Pi` 的抗饱和按误差符号判断：误差反向、积分增量仍在把输出往同一侧推时条件积分不触发，输出继续贴限幅。改成按积分增量的符号判断；`dt == 0` 时增量直接置 0，不再把 NaN 写进积分项。
+- `examples/waveform` 把「归一化调制指令」与「桥臂高电平占比」当同一个量打印：过调制区两者差得明显，读数会误导。现在分两行，高电平占比由 `on_time_of_phase / ts` 现算。
+- `examples/waveform` 的三相开关波形各按自己的时间起点铺开，叠在一张图上相位对不齐；改为按统一时间轴逐列取中点采样。
+- `examples/speed_loop` 用同一个峰值同时统计 iq 给定与模型 iq：响应跟不上给定时看不出差距。现在分成 `iq_ref_peak` 与 `iq_peak` 两个量。
+
 ## [0.1.14] - 2026-11-17
 
 ### Added

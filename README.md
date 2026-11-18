@@ -10,10 +10,10 @@ MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.14`（MIT；发布记录：2026-11-17）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.15`（MIT；发布记录：2026-11-19）：
 
 ```
-moon add Duckweed/moon-foc@0.1.14
+moon add Duckweed/moon-foc@0.1.15
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。

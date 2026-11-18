@@ -21,11 +21,11 @@ and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.14` (release 0.1.14, MIT,
-published 2026-11-17):
+Published to mooncakes as `Duckweed/moon-foc@0.1.15` (release 0.1.15, MIT,
+published 2026-11-19):
 
 ```
-moon add Duckweed/moon-foc@0.1.14
+moon add Duckweed/moon-foc@0.1.15
 ```
 
 The bundled `examples/demo` can still be run directly from this repository
