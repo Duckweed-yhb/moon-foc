@@ -1,6 +1,6 @@
 # moon-foc
 
-> 本地源码验证（2026-11-18）：Native、JS、Wasm、Wasm-GC 四个后端各通过 169/169 项测试，Native 严格编译检查通过。
+> 本地源码验证（2026-11-18）：Native、JS、Wasm、Wasm-GC 四个后端各通过 172/172 项测试，Native 严格编译检查通过。
 
 [English](./README.en.md)
 
@@ -185,6 +185,20 @@ let iq_ref = sc.step(100.0, mech.omega_m())
 ```
 
 整定口径和电流环不一样：电流环对消电气极点 `R/L`，速度环不对消机械极点。`B/J` 一般只有零点几 rad/s，把它对消掉会让环路退化成纯积分对象，阻尼全压在 `Kp` 上，剩下一个极慢的模态 - 这个数是在 `examples/speed_loop` 里实跑出来的（负载阶跃后 1 s 只回到 98.3 rad/s，iq 已经到稳态值，看着像稳态误差，其实是慢模态没走完），不是纸面推导。改成积分时间常数取带宽的五分之一：`Kp = ω_bw·J/Kt`，`Ki = Kp·ω_bw/5`。
+
+要复用完整级联仿真，在包的 `moon.pkg` 中导入 `Duckweed/moon-foc/simulation`。从静止状态创建驱动模型，每次调用 `step(目标转速, 负载转矩)` 推进一个采样周期。这样可以直接传入自己的负载时间序列。电压和电流给定对应本拍控制指令，转速和电流读数对应本拍积分结束时的状态。
+
+```moonbit
+let drive = @simulation.SpeedDrive::new(
+  { resistance: 0.5, ld: 0.0008, lq: 0.0012, magnet_flux: 0.05,
+    pole_pairs: 4, inertia: 0.002, damping: 0.0005 },
+  { vdc: 48.0, dt: 0.0001, current_hz: 400.0, speed_hz: 40.0, iq_limit: 8.0 },
+).unwrap()
+for i in 0..<20000 {
+  let sample = drive.step(100.0, if i >= 10000 { 1.0 } else { 0.0 }).unwrap()
+  if i == 19999 { println(sample.omega_m) }
+}
+```
 
 `examples/speed_loop` 的参数：R=0.5 Ω、Ld=0.8 mH、Lq=1.2 mH、ψf=0.05 Wb、pp=4（Kt=0.3 N·m/A）、J=2e-3 kg·m²、B=5e-4、Vdc=48 V、Ts=0.1 ms、电流环 400 Hz、速度环 40 Hz、iq 给定限幅 ±8 A。d/q 两轴 PI 分别按 Ld/Lq 整定。本机 native 实测（2026-11-18，工具链 0.1.20261104）：
 

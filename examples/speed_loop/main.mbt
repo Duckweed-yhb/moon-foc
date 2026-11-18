@@ -70,20 +70,19 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
     " A/rad",
   )
 
-  let elec = @motor.PmsmModel::new(r, ld, lq, psi_f, pole_pairs, 0.0)
-  let mech = @motor.MechanicalModel::new(j, b, pole_pairs, 0.0)
-  let speed = @controller.SpeedController::new(
-    speed_gains.kp(),
-    speed_gains.ki(),
-    dt,
-    -iq_limit,
-    iq_limit,
-  )
-  let d_gains = @controller.design_current_loop(r, ld, current_hz)
-  let q_gains = @controller.design_current_loop(r, lq, current_hz)
-  let vlimit = vdc / 3.0.sqrt()
-  let pi_d = @pi.Pi::new(d_gains.kp(), d_gains.ki(), dt, -vlimit, vlimit)
-  let pi_q = @pi.Pi::new(q_gains.kp(), q_gains.ki(), dt, -vlimit, vlimit)
+  let drive = @simulation.SpeedDrive::new(
+    {
+      resistance: r,
+      ld,
+      lq,
+      magnet_flux: psi_f,
+      pole_pairs,
+      inertia: j,
+      damping: b,
+    },
+    { vdc, dt, current_hz, speed_hz, iq_limit, },
+  ).unwrap()
+  let mut final_iq = 0.0
 
   let mut t_rise = -1.0
   let mut t_settle = -1.0
@@ -100,25 +99,11 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
   let mut tail_n = 0
 
   for i in 0..<steps {
-    let omega = mech.omega_m()
-    let iq_ref = speed.step(omega_ref, omega)
-    let vd_pi = pi_d.step(0.0 - elec.id())
-    let vq_pi = pi_q.step(iq_ref - elec.iq())
-    let emf = @controller.back_emf_voltage(mech.omega_e(), psi_f)
-    let (vd, vq) = @controller.apply_feedforward(vd_pi, vq_pi, 0.0, emf, vdc)
-    elec.set_speed(mech.omega_m())
-    elec.step(vd, vq, dt)
-    let te = @motor.electromagnetic_torque(
-      elec.id(),
-      elec.iq(),
-      ld,
-      lq,
-      psi_f,
-      pole_pairs,
-    )
+    let omega = drive.omega_m()
     let load_now = if i >= load_at { load } else { 0.0 }
-    mech.step(te, load_now, dt)
-
+    let sample = drive.step(omega_ref, load_now).unwrap()
+    let iq_ref = sample.iq_ref
+    final_iq = sample.iq
     let t = i.to_double() * dt
     if omega > peak {
       peak = omega
@@ -126,8 +111,8 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
     if iq_ref.abs() > iq_ref_peak {
       iq_ref_peak = iq_ref.abs()
     }
-    if elec.iq().abs() > iq_peak {
-      iq_peak = elec.iq().abs()
+    if sample.iq.abs() > iq_peak {
+      iq_peak = sample.iq.abs()
     }
     if t_rise < 0.0 && omega >= 10.0 {
       t_rise = t
@@ -208,7 +193,7 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
     " rad/s，均值 " +
     round4(tail_sum / tail_n.to_double()) +
     " rad/s，末拍 iq " +
-    round4(elec.iq()) +
+    round4(final_iq) +
     " A",
   )
   println(
