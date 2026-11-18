@@ -56,6 +56,8 @@ jobs:
       - name: Run examples/reject_demo
         run: moon run examples/reject_demo --target native
       # 电流环闭环仿真：模型上跟踪 iq 阶跃，跑通整条 controller 链路。
+      - name: Run controller design report
+        run: moon run examples/design_report --target native
       - name: Run speed-loop bandwidth comparison
         run: moon run examples/speed_loop --target native
 
