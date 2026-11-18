@@ -90,16 +90,8 @@ pub fn loop_gain_mag(
   }
   let l_safe = if design_finite(l) && l > 1.0e-9 { l } else { 1.0e-9 }
   let r_safe = if design_finite(r) && r >= 0.0 { r } else { 0.0 }
-  // C(jω) = kp − j·ki/ω
-  let cr = kp
-  let ci = -(ki / omega)
-  // P(jω) = (r − jωL) / (r² + (ωL)²)
-  let d = r_safe * r_safe + omega * l_safe * (omega * l_safe)
-  let pr = r_safe / d
-  let pi_ = -(omega * l_safe) / d
-  let rr = cr * pr - ci * pi_
-  let ri = cr * pi_ + ci * pr
-  (rr * rr + ri * ri).sqrt()
+  // |C/P_den| = |kp - j Ki/omega| / |R + j omega L|.
+  @math.hypot(kp, ki / omega) / @math.hypot(r_safe, omega * l_safe)
 }
 
 ///|
@@ -116,14 +108,16 @@ pub fn loop_gain_phase(
   }
   let l_safe = if design_finite(l) && l > 1.0e-9 { l } else { 1.0e-9 }
   let r_safe = if design_finite(r) && r >= 0.0 { r } else { 0.0 }
-  let cr = kp
-  let ci = -(ki / omega)
-  let d = r_safe * r_safe + omega * l_safe * (omega * l_safe)
-  let pr = r_safe / d
-  let pi_ = -(omega * l_safe) / d
-  let rr = cr * pr - ci * pi_
-  let ri = cr * pi_ + ci * pr
-  @math.atan2(ri, rr)
+  if kp == 0.0 && ki == 0.0 {
+    return 0.0
+  }
+  let phase = @math.atan2(-(ki / omega), kp) -
+    @math.atan2(omega * l_safe, r_safe)
+  if phase <= -design_pi() {
+    phase + 2.0 * design_pi()
+  } else {
+    phase
+  }
 }
 
 ///|
@@ -170,6 +164,10 @@ pub fn phase_margin_deg(
     return 0.0
   }
   let arg = loop_gain_phase(r, l, kp, ki, 2.0 * design_pi() * fc)
+  // The negative real axis is represented by +pi in the public phase API.
+  if arg == design_pi() {
+    return 0.0
+  }
   let pm = 180.0 + arg * 180.0 / design_pi()
   if design_finite(pm) {
     pm

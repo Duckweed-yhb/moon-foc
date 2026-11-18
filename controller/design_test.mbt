@@ -121,3 +121,15 @@ test "design: 无交叉频率返回 0" {
   let fc = @controller.crossover_hz(0.5, 0.002, 1.0e-9, 0.0)
   assert_true(fc == 0.0)
 }
+
+///|
+test "scaling controller and impedance together preserves open loop response" {
+  // An integral controller on a pure inductor has -180 degrees at crossover.
+  assert_eq(@controller.phase_margin_deg(0.0, 1.0, 0.0, 1.0), 0.0)
+  for scale in [1.0, 1.0e200] {
+    let gain = @controller.loop_gain_mag(scale, scale, scale, scale, 1.0)
+    let phase = @controller.loop_gain_phase(scale, scale, scale, scale, 1.0)
+    assert_true((gain - 1.0).abs() < 1.0e-12)
+    assert_true((phase + 1.5707963267948966).abs() < 1.0e-12)
+  }
+}
