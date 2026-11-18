@@ -22,9 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 本包不使用 C FFI，三个目标的行为应当一致；逐个跑是为了让
+        # 本包不使用 C FFI，四个目标的行为应当一致；逐个跑是为了让
         # 「跨后端可用」成为构建期可验证的事实，而不是 README 里的一句声明。
-        target: [wasm-gc, js, native]
+        target: [wasm, wasm-gc, js, native]
     steps:
       - uses: actions/checkout@v4
       - name: Setup MoonBit

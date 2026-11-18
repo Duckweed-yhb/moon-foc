@@ -295,7 +295,7 @@ python -m http.server 8765             # 仓库根目录执行，然后打开 ht
 产物与页面同目录且不依赖 CDN，直接双击 `docs/demo/index.html` 也能看。全量网格在 node 下跑完约 127 ms，页面加载没有可感知的等待。档数写在 `examples/web_demo/main.mbt` 的扫掠范围和页面的滑块范围两处，改档数要同时改。GitHub Pages 托管需要在仓库设置里把 `docs/` 设为发布源，这一步不在仓库内。
 ## 测试
 
-CI 配置包含格式检查、wasm-gc / js / native 三目标的严格检查、构建与测试，运行 demo、waveform、reject_demo、foc_sim、speed_loop 五个 native 示例，并检查发布元数据一致性。四后端本地验证结果见本文开头。
+CI 配置包含格式检查、wasm / wasm-gc / js / native 四目标的严格检查、构建与测试，运行 demo、waveform、reject_demo、foc_sim、speed_loop 五个 native 示例，并检查发布元数据一致性。四后端本地验证结果见本文开头。
 
 ```
 moon check --deny-warn --target wasm-gc
