@@ -156,6 +156,9 @@ pub fn SpeedDrive::step(
     load_torque.is_inf() {
     return Err("speed reference and load torque must be finite")
   }
+  if omega_ref < 0.0 {
+    return Err("reverse speed reference is outside the single-direction model")
+  }
   let p = self.params
   let t = self.tuning
   let e = self.electrical

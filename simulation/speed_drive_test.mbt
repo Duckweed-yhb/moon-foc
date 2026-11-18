@@ -37,6 +37,7 @@ test "rejected commands leave the next valid sample reproducible" {
   let reference = @simulation.SpeedDrive::new(motor_params(), drive_tuning()).unwrap()
   for i in 0..<50 {
     if i == 25 {
+      assert_true(drive.step(-25.0, 0.3) is Err(_))
       assert_true(drive.step(0.0 / 0.0, 0.0) is Err(_))
       assert_true(drive.step(50.0, 1.0 / 0.0) is Err(_))
     }
