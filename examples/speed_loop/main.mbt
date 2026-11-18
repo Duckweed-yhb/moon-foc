@@ -20,6 +20,9 @@ fn main {
 
 ///|
 priv struct SpeedResponse {
+  final_iq : Double
+  tail_min : Double
+  tail_max : Double
   dip : Double
   recovery : Double
   first_entry : Double
@@ -155,6 +158,9 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
   }
 
   let response : SpeedResponse = {
+    final_iq,
+    tail_min,
+    tail_max,
     dip,
     recovery: t_recover,
     first_entry: t_settle,

@@ -4,6 +4,11 @@ test "load-step speed dip and recovery at two bandwidths" {
   let slow = run_case(20.0)
   assert_true((fast.first_entry - 0.0835).abs() < 0.0002)
   for response in [fast, slow] {
+    // Steady torque balances the applied load and viscous drag.
+    assert_true(
+      (response.final_iq - (1.0 + 0.0005 * 100.0) / 0.3).abs() < 0.001,
+    )
+    assert_true(response.tail_min >= 99.99 && response.tail_max <= 100.01)
     assert_eq(response.iq_ref_peak, 8.0)
     assert_true((response.iq_peak - 8.0000).abs() < 0.001)
   }
