@@ -14,6 +14,12 @@
 ///
 /// 运行：`moon run examples/speed_loop --target native`
 fn main {
+  run_case(40.0)
+  run_case(20.0)
+}
+
+///|
+fn run_case(speed_hz : Double) -> Unit {
   let r = 0.5
   let ld = 0.0008
   let lq = 0.0012
@@ -25,7 +31,6 @@ fn main {
   let dt = 1.0e-4
   let steps = 20000
   let current_hz = 400.0
-  let speed_hz = 40.0
   let iq_limit = 8.0
   let omega_ref = 100.0
   let load_at = 10000
@@ -40,7 +45,9 @@ fn main {
     current_hz.to_string() +
     " Hz / 速度环 " +
     speed_hz.to_string() +
-    " Hz，比值 0.1，判据 speed_bandwidth_ok → " +
+    " Hz，比值 " +
+    round4(speed_hz / current_hz) +
+    "，判据 speed_bandwidth_ok → " +
     @controller.speed_bandwidth_ok(speed_hz, current_hz, 0.2).to_string(),
   )
 
@@ -131,6 +138,8 @@ fn main {
       if sag > dip {
         dip = sag
         dip_at = i
+        band_since = -1
+        t_recover = -1.0
       }
       // 跌落到底之后才算恢复；回带后还要连续 1 ms 不越界，
       // 避免把下落途中的一次穿越算成「已回带」。
