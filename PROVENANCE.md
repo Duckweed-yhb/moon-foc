@@ -6,7 +6,7 @@ This file records where the code, the design references, and the test data of
 ## Origin of the source code
 
 All MoonBit source under `svpwm/`, `coord/`, `angle/`, `pi/`, `controller/`,
-`motor/`, and `examples/` was written for this project. No source file was
+`motor/`, `simulation/`, and `examples/` was written for this project. No source file was
 copied from another project.
 
 ## Design references
@@ -29,6 +29,7 @@ power, which this project does not duplicate. See the README for the boundary.
   `coord/coord_test.mbt` and `svpwm/svpwm_test.mbt`.
 - The hand-computed baseline at θ=π/6 was calculated by hand from the same
   formulas.
+- `simulation/speed_drive_test.mbt` checks the cascaded simulation against steady-state torque balance and the q-axis voltage equation, independently of the sampled transient output.
 - No third-party capture, corpus, or dataset is included.
 
 ## AI assistance

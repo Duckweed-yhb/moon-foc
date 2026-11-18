@@ -65,3 +65,27 @@ test "drive validates setup before simulation" {
     @simulation.SpeedDrive::new(p, { ..t, speed_hz: 1.0e250, }) is Err(_),
   )
 }
+
+///|
+test "loaded steady state satisfies torque balance and q-axis voltage equation" {
+  let p = motor_params()
+  for speed_ref in [40.0, 100.0] {
+    let drive = @simulation.SpeedDrive::new(p, drive_tuning()).unwrap()
+    let load = 0.7
+    // Apply the load after spin-up; check the final electric and mechanical states.
+    for k in 0..<15000 {
+      let s = drive.step(speed_ref, if k < 5000 { 0.0 } else { load }).unwrap()
+      if k == 14999 {
+        let t_required = load + p.damping * speed_ref
+        let iq_required = t_required /
+          (1.5 * p.pole_pairs.to_double() * p.magnet_flux)
+        let vq_required = p.resistance * iq_required +
+          p.pole_pairs.to_double() * speed_ref * p.magnet_flux
+        assert_true((s.omega_m - speed_ref).abs() < 1.0e-6)
+        assert_true((s.iq - iq_required).abs() < 1.0e-6)
+        assert_true((s.vq - vq_required).abs() < 1.0e-6)
+        assert_true((s.torque - t_required).abs() < 1.0e-6)
+      }
+    }
+  }
+}

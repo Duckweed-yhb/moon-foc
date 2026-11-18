@@ -1,6 +1,6 @@
 # moon-foc
 
-> Working-tree verification (2026-11-18): native, js, wasm-gc and wasm each pass 172/172. Native strict checks and formatting pass.
+> Working-tree verification (2026-11-18): native, js, wasm-gc and wasm each pass 173/173. Native strict checks and formatting pass.
 
 [中文](./README.md) · English
 
@@ -373,7 +373,7 @@ python -m http.server 8765             # run from the repo root, then open http:
 The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
-CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 172/172 on native, js, wasm-gc and wasm.
+CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 173/173 on native, js, wasm-gc and wasm.
 
 ```
 moon check --deny-warn --target wasm-gc

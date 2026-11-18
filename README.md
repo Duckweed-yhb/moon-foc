@@ -1,6 +1,6 @@
 # moon-foc
 
-> 本地源码验证（2026-11-18）：Native、JS、Wasm、Wasm-GC 四个后端各通过 172/172 项测试，Native 严格编译检查通过。
+> 本地源码验证（2026-11-18）：Native、JS、Wasm、Wasm-GC 四个后端各通过 173/173 项测试，Native 严格编译检查通过。
 
 [English](./README.en.md)
 
