@@ -193,13 +193,13 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
   )
   println(
     "③ 末段 0.2 s：转速 " +
-    round4(tail_min) +
+    round4(response.tail_min) +
     " ~ " +
-    round4(tail_max) +
+    round4(response.tail_max) +
     " rad/s，均值 " +
     round4(tail_sum / tail_n.to_double()) +
     " rad/s，末拍 iq " +
-    round4(final_iq) +
+    round4(response.final_iq) +
     " A",
   )
   println(
