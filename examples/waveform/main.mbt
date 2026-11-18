@@ -66,7 +66,7 @@ pub fn build_report(
     @svpwm.sector_of(alpha, beta).to_string(),
   )
   println(
-    "duties  a=" +
+    "归一化调制指令 [-1,1]  a=" +
     da.to_string() +
     "  b=" +
     db.to_string() +
@@ -77,6 +77,14 @@ pub fn build_report(
     println("(非法输入：序列为空)")
     return
   }
+  println(
+    "桥臂高电平占比  a=" +
+    (@svpwm.on_time_of_phase(seq, 0) / ts).to_string() +
+    "  b=" +
+    (@svpwm.on_time_of_phase(seq, 1) / ts).to_string() +
+    "  c=" +
+    (@svpwm.on_time_of_phase(seq, 2) / ts).to_string(),
+  )
   let mut seq_line = ""
   for seg in seq {
     let (state, dur) = seg
@@ -109,6 +117,6 @@ fn main {
     vdc,
     "过调制 m=1.5, theta=30deg",
   )
-  // 零矢量：应当整周期不翻转
+  // 零矢量：三相同步切换，线电压保持为零
   build_report(0.0, 0.0, ts, vdc, "零矢量")
 }
