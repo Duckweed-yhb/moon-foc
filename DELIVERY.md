@@ -13,7 +13,7 @@
 | 项 | 申报书（2026-10-19） | 现在 |
 |---|---|---|
 | 版本 | 0.1.3 | **0.1.14**（mooncakes 最新，2026-11-17 发布） |
-| 单测 | 36 | **160**（native / js / wasm-gc 各 160，wasm 未重跑） |
+| 单测 | 36 | **163**（native / js / wasm-gc / wasm 各 163） |
 | 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端**（wasm 仅本机实测，未进 CI 矩阵） |
 | commits | 29 | 持续追加（提交数以 `git log` 为准；是否已推送看 `git log origin/main..HEAD`） |
 | 包 | `svpwm/` `coord/` `angle/` | 增加 **`pi/`**、**`controller/`**、**`motor/`** |
@@ -43,14 +43,14 @@
 
 | 申报书原文 | 现状 | 说明 |
 |---|---|---|
-| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通；当前 native / js / wasm-gc 各 160 测试，wasm 本轮未重跑 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
-| 「36 个单测」 | 160 | 新增包的测试 + 每轮修复补的回归用例 |
+| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通；当前 native / js / wasm-gc / wasm 各 163 测试 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
+| 「36 个单测」 | 163 | 新增包的测试 + 每轮修复补的回归用例 |
 
 ## 四、验证证据（可复现）
 
 ```bash
 moon check --deny-warn --target wasm        # 四个目标逐个跑，下同
-moon test --target wasm                    # 160/160
+moon test --target wasm                    # 163/163
 moon run examples/demo --target native     # 变换与占空比数值
 moon run examples/waveform --target native # 七段式时序图
 moon run examples/reject_demo --target native  # 每条拒绝路径
