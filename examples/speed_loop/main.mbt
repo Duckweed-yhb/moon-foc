@@ -79,22 +79,11 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
     -iq_limit,
     iq_limit,
   )
-  let current_gains = @controller.design_current_loop(r, ld, current_hz)
+  let d_gains = @controller.design_current_loop(r, ld, current_hz)
+  let q_gains = @controller.design_current_loop(r, lq, current_hz)
   let vlimit = vdc / 3.0.sqrt()
-  let pi_d = @pi.Pi::new(
-    current_gains.kp(),
-    current_gains.ki(),
-    dt,
-    -vlimit,
-    vlimit,
-  )
-  let pi_q = @pi.Pi::new(
-    current_gains.kp(),
-    current_gains.ki(),
-    dt,
-    -vlimit,
-    vlimit,
-  )
+  let pi_d = @pi.Pi::new(d_gains.kp(), d_gains.ki(), dt, -vlimit, vlimit)
+  let pi_q = @pi.Pi::new(q_gains.kp(), q_gains.ki(), dt, -vlimit, vlimit)
 
   let mut t_rise = -1.0
   let mut t_settle = -1.0

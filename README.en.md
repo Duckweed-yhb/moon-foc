@@ -211,12 +211,12 @@ bandwidth: `Kp = ω_bw·J/Kt`, `Ki = Kp·ω_bw/5`.
 
 `examples/speed_loop` uses R=0.5 Ω, Ld=0.8 mH, Lq=1.2 mH, ψf=0.05 Wb, pp=4
 (Kt=0.3 N·m/A), J=2e-3 kg·m², B=5e-4, Vdc=48 V, Ts=0.1 ms, current loop 400 Hz,
-speed loop 40 Hz, iq limited to ±8 A. Native local run (2026-11-14, toolchain
+speed loop 40 Hz, iq reference limited to ±8 A. Each current PI uses its own axis inductance. Native local run (2026-11-18, toolchain
 0.1.20261104):
 
-- 0 → 100 rad/s: 10 % point at 8.7 ms, ±2 % band at 83.5 ms, peak 100.4662 rad/s
-  (0.47 % overshoot), iq peak saturating at the 8 A limit.
-- 1 N·m load step at 1.0 s: maximum dip 1.5511 rad/s, back inside ±1 % after 20.5 ms.
+- 0 → 100 rad/s: 10 % point at 8.7 ms, ±2 % band at 83.5 ms, peak 100.4753 rad/s
+  (0.48 % overshoot), iq reference peak 8 A and simulated iq peak 8.0000 A to four decimal places.
+- 1 N·m load step at 1.0 s: maximum dip 1.5569 rad/s, back inside ±1 % after 20.5 ms.
 - Last 0.2 s: speed steady at 100 rad/s, final iq 3.5 A (1 N·m / Kt = 3.333 A plus
   the damping term B·ω/Kt = 0.167 A).
 
