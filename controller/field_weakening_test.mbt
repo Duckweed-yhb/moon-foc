@@ -91,3 +91,19 @@ test "invalid inputs return zero" {
     0.0,
   )
 }
+
+///|
+test "exact voltage boundary cancels magnet flux before current limiting" {
+  // |omega * Lq * iq| = Vmax. The remaining q-axis voltage must be zero.
+  for speed in [8.0, -8.0] {
+    let id = @controller.field_weakening_id(
+      speed, 0.25, 0.5, 0.5, 2.0, 8.0, -5.0,
+    )
+    assert_eq(id, -2.0)
+    assert_eq(0.25 * id + 0.5, 0.0)
+    assert_eq(
+      @controller.field_weakening_id(speed, 0.25, 0.5, 0.5, 2.0, 8.0, -1.0),
+      -1.0,
+    )
+  }
+}

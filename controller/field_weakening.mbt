@@ -79,7 +79,8 @@ pub fn field_weakening_id(
   let speed = omega_e.abs()
   let vq_term = speed * lq * iq
   let square = vmax * vmax - vq_term * vq_term
-  if square <= 0.0 {
+  // At equality, cancelling the magnet flux still satisfies the voltage limit.
+  if square < 0.0 {
     return floor
   }
   let headroom = square.sqrt() / speed - psi_f
