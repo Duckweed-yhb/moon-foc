@@ -90,18 +90,19 @@ fn pi_finite(x : Double) -> Bool {
 ///|
 /// 走一个采样步：输入误差，返回限幅后的输出。
 ///
-/// 抗饱和规则：输出顶到某侧限幅、且误差仍在把输出往**同一侧**推时冻结积分；
+/// 抗饱和规则：输出顶到某侧限幅、且积分增量仍把输出往同一侧推时冻结积分；
 /// 误差反向时照常积分，这样退出饱和是一个采样步就能完成的事。
 pub fn Pi::step(self : Pi, err : Double) -> Double {
   if !pi_finite(err) {
     // 坏采样不该污染状态：保持积分器不动，返回当前积分项的限幅值。
     return pi_clamp(self.integ, self.out_min, self.out_max)
   }
-  let candidate = self.integ + self.ki * err * self.dt
+  let increment = if self.dt == 0.0 { 0.0 } else { self.ki * err * self.dt }
+  let candidate = self.integ + increment
   let raw = self.kp * err + candidate
   let out = pi_clamp(raw, self.out_min, self.out_max)
-  let pushing_high = raw > self.out_max && err > 0.0
-  let pushing_low = raw < self.out_min && err < 0.0
+  let pushing_high = raw > self.out_max && increment > 0.0
+  let pushing_low = raw < self.out_min && increment < 0.0
   if !(pushing_high || pushing_low) {
     self.integ = candidate
   }

@@ -87,6 +87,10 @@ test "zero dt degrades to proportional" {
   let pi = @pi.Pi::new(2.0, 10.0, 0.0, -100.0, 100.0)
   assert_true(near(pi.step(1.0), 2.0))
   assert_true(near(pi.integral(), 0.0))
+  // A disabled integrator must not evaluate an overflowing Ki * error product.
+  let p_only = @pi.Pi::new(0.5, 1.0e308, 0.0, -10.0, 10.0)
+  assert_eq(p_only.step(4.0), 2.0)
+  assert_eq(p_only.integral(), 0.0)
 }
 
 ///|
@@ -95,4 +99,16 @@ test "reversed output limits are normalised" {
   let pi = @pi.Pi::new(10.0, 0.0, 0.001, 1.0, -1.0)
   assert_true(near(pi.step(1.0), 1.0))
   assert_true(near(pi.step(-1.0), -1.0))
+}
+
+///|
+test "reverse acting integral unwinds immediately after saturation" {
+  for sign in [-1.0, 1.0] {
+    let pi = @pi.Pi::new(0.0, -1.0, 1.0, -1.0, 1.0)
+    for _ in 0..<10 {
+      assert_eq(pi.step(sign), -sign)
+    }
+    assert_eq(pi.integral(), -sign)
+    assert_eq(pi.step(-sign), 0.0)
+  }
 }
