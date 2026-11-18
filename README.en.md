@@ -209,6 +209,8 @@ steady value, which looks like a steady-state error but is the slow mode still
 settling. The module instead puts the integral time constant at one fifth of the
 bandwidth: `Kp = ω_bw·J/Kt`, `Ki = Kp·ω_bw/5`.
 
+The public `simulation.SpeedDrive` runs the same cascaded controller one sample at a time. Call `drive.step(speed_ref, load_torque)` with speed in rad/s and load in N·m. The single-direction model rejects negative speed commands before changing state. Its constructor accepts inductances of at least 1 nH and inertia of at least 1e-12 kg·m² so the PI design and simulated motor use the same parameters.
+
 `examples/speed_loop` uses R=0.5 Ω, Ld=0.8 mH, Lq=1.2 mH, ψf=0.05 Wb, pp=4
 (Kt=0.3 N·m/A), J=2e-3 kg·m², B=5e-4, Vdc=48 V, Ts=0.1 ms, current loop 400 Hz,
 speed loop 40 Hz, iq reference limited to ±8 A. Each current PI uses its own axis inductance. Native local run (2026-11-18, toolchain
