@@ -57,14 +57,21 @@ pub fn PmsmModel::new(
     id: 0.0,
     iq: 0.0,
     theta_e: 0.0,
-    omega_e: omega_m * pp.to_double(),
+    omega_e: if finite(omega_m * pp.to_double()) {
+      omega_m * pp.to_double()
+    } else {
+      0.0
+    },
   }
 }
 
 ///|
 /// 外部给定机械角速度（弧度 / 秒），内部换算成电角速度。
 pub fn PmsmModel::set_speed(self : PmsmModel, omega_m : Double) -> Unit {
-  self.omega_e = omega_m * self.pole_pairs.to_double()
+  let speed = omega_m * self.pole_pairs.to_double()
+  if finite(speed) {
+    self.omega_e = speed
+  }
 }
 
 ///|
@@ -91,9 +98,14 @@ pub fn PmsmModel::step(
       vq - self.r * self.iq - self.omega_e * (self.psi_f + self.ld * self.id)
     ) /
     self.lq
-  self.id = self.id + did * dt
-  self.iq = self.iq + diq * dt
-  self.theta_e = @angle.normalize_angle(self.theta_e + self.omega_e * dt)
+  let id = self.id + did * dt
+  let iq = self.iq + diq * dt
+  let angle = self.theta_e + self.omega_e * dt
+  if finite(id) && finite(iq) && finite(angle) {
+    self.id = id
+    self.iq = iq
+    self.theta_e = @angle.normalize_angle(angle)
+  }
 }
 
 ///|

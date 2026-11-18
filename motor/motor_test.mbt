@@ -129,3 +129,17 @@ test "q axis flux includes d axis current" {
   let iq_ss = -(400.0 * flux) / r
   assert_true((m.iq() - iq_ss).abs() < 1.0e-3)
 }
+
+///|
+test "invalid speed and overflowing voltage step preserve electrical state" {
+  let motor = @motor.PmsmModel::new(0.5, 0.001, 0.001, 0.05, 4, 10.0)
+  motor.set_speed(1.0 / 0.0)
+  assert_eq(motor.omega_e(), 40.0)
+  motor.step(1.0e308, 3.0, 0.001)
+  assert_eq(motor.id(), 0.0)
+  assert_eq(motor.iq(), 0.0)
+  assert_eq(motor.theta_e(), 0.0)
+  motor.step(1.0, 3.0, 0.001)
+  assert_eq(motor.id(), 1.0)
+  assert_eq(motor.iq(), 1.0)
+}

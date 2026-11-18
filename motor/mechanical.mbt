@@ -32,9 +32,14 @@ pub fn MechanicalModel::new(
   pole_pairs : Int32,
   omega_m : Double,
 ) -> MechanicalModel {
-  let j_safe = if j > 1.0e-12 { j } else { 1.0e-12 }
-  let b_safe = if b >= 0.0 { b } else { 0.0 }
+  let j_safe = if mech_finite(j) && j > 1.0e-12 { j } else { 1.0e-12 }
+  let b_safe = if mech_finite(b) && b >= 0.0 { b } else { 0.0 }
   let pp = if pole_pairs > 0 { pole_pairs } else { 1 }
+  let omega_m = if mech_finite(omega_m) && omega_m > 0.0 {
+    omega_m
+  } else {
+    0.0
+  }
   { j: j_safe, b: b_safe, pole_pairs: pp, omega_m, theta_m: 0.0, }
 }
 
@@ -87,8 +92,16 @@ pub fn MechanicalModel::step(
   }
   let acc = (torque - load - self.b * self.omega_m) / self.j
   let next = self.omega_m + acc * dt
-  self.omega_m = if next < 0.0 { 0.0 } else { next }
-  self.theta_m = @angle.normalize_angle(self.theta_m + self.omega_m * dt)
+  if !mech_finite(next) {
+    return
+  }
+  let speed = if next < 0.0 { 0.0 } else { next }
+  let angle = self.theta_m + speed * dt
+  if !mech_finite(angle) {
+    return
+  }
+  self.omega_m = speed
+  self.theta_m = @angle.normalize_angle(angle)
 }
 
 ///|

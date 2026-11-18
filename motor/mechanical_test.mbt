@@ -77,3 +77,17 @@ test "mechanical model rejects bad dt and clamps negative speed" {
   assert_true(mech_close(m2.omega_e(), 100.0))
   assert_eq(m2.theta_m() >= 0.0, true)
 }
+
+///|
+test "mechanical integration commits angle and speed together" {
+  let m = @motor.MechanicalModel::new(1.0, 0.0, 1, 2.0)
+  m.step(1.0e200, 0.0, 1.0e100)
+  assert_eq(m.omega_m(), 2.0)
+  assert_eq(m.theta_m(), 0.0)
+  m.step(1.0, 0.0, 0.5)
+  assert_eq(m.omega_m(), 2.5)
+  assert_eq(m.theta_m(), 1.25)
+  for invalid in [-1.0, 1.0 / 0.0, 0.0 / 0.0] {
+    assert_eq(@motor.MechanicalModel::new(1.0, 0.0, 1, invalid).omega_m(), 0.0)
+  }
+}
