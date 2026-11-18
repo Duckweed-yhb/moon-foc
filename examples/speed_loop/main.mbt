@@ -90,6 +90,7 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
   let mut t_rise = -1.0
   let mut t_settle = -1.0
   let mut peak = 0.0
+  let mut iq_ref_peak = 0.0
   let mut iq_peak = 0.0
   let mut dip = 0.0
   let mut dip_at = 0
@@ -124,8 +125,11 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
     if omega > peak {
       peak = omega
     }
-    if iq_ref.abs() > iq_peak {
-      iq_peak = iq_ref.abs()
+    if iq_ref.abs() > iq_ref_peak {
+      iq_ref_peak = iq_ref.abs()
+    }
+    if elec.iq().abs() > iq_peak {
+      iq_peak = elec.iq().abs()
     }
     if t_rise < 0.0 && omega >= 10.0 {
       t_rise = t
@@ -174,11 +178,13 @@ fn run_case(speed_hz : Double) -> (Double, Double) {
     round4(t_settle) +
     " s，峰值 " +
     round4(peak) +
-    " rad/s，iq 峰值 " +
+    " rad/s，模型 iq 峰值 " +
     round4(iq_peak) +
-    " A（已顶到 " +
+    " A，iq 给定峰值 " +
+    round4(iq_ref_peak) +
+    " A（给定限幅 " +
     iq_limit.to_string() +
-    " A 限幅）",
+    " A）",
   )
   println(
     "② 1.0 s 加 " +
