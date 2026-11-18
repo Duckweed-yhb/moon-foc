@@ -26,18 +26,19 @@ fn timeline_of(
   columns : Int32,
 ) -> String {
   let mut out = ""
-  for seg in seq {
-    let (state, dur) = seg
-    let scaled = dur / ts * columns.to_double() + 0.5
-    let mut w = scaled.to_int()
-    if w < 0 {
-      w = 0
+  // Sample the midpoint of each display column on a common time axis.
+  let mut segment = 0
+  let mut end_time = 0.0
+  for column in 0..<columns {
+    let time = (column.to_double() + 0.5) / columns.to_double() * ts
+    while segment < seq.length() && end_time + seq[segment].1 <= time {
+      end_time += seq[segment].1
+      segment += 1
     }
-    let ch = if state_bit(state, phase) { "#" } else { "." }
-    let mut i = 0
-    while i < w {
-      out = out + ch
-      i = i + 1
+    if segment < seq.length() && state_bit(seq[segment].0, phase) {
+      out += "#"
+    } else {
+      out += "."
     }
   }
   out
