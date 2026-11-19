@@ -1,6 +1,6 @@
 # moon-foc
 
-> 本地源码验证（2026-11-18）：Native、JS、Wasm、Wasm-GC 四个后端各通过 173/173 项测试，Native 严格编译检查通过。
+> 本地源码验证（2026-11-19）：Native、JS、Wasm、Wasm-GC 四个后端各通过 174/174 项测试，Native 严格编译检查通过。
 
 [English](./README.en.md)
 
@@ -10,10 +10,10 @@ MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.15`（MIT；发布记录：2026-11-19）：
+已发布到 mooncakes：`Duckweed/moon-foc@0.1.16`（MIT；发布记录：2026-11-19）：
 
 ```
-moon add Duckweed/moon-foc@0.1.15
+moon add Duckweed/moon-foc@0.1.16
 ```
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。
