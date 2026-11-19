@@ -100,11 +100,24 @@ pub fn Pi::step(self : Pi, err : Double) -> Double {
   let increment = if self.dt == 0.0 { 0.0 } else { self.ki * err * self.dt }
   let candidate = self.integ + increment
   let raw = self.kp * err + candidate
+  // Opposite-sign overflow in the P and I terms has no defined direction.
+  if raw.is_nan() {
+    return pi_clamp(self.integ, self.out_min, self.out_max)
+  }
   let out = pi_clamp(raw, self.out_min, self.out_max)
   let pushing_high = raw > self.out_max && increment > 0.0
   let pushing_low = raw < self.out_min && increment < 0.0
-  if !(pushing_high || pushing_low) {
+  if !(pushing_high || pushing_low) && !candidate.is_inf() {
     self.integ = candidate
   }
   out
+}
+
+///|
+test "opposing overflow preserves the last finite integral" {
+  let pi = Pi::new(1.0e200, -1.0e200, 1.0, -10.0, 10.0)
+  pi.set_integral(3.0)
+  assert_eq(pi.step(1.0e200), 3.0)
+  assert_eq(pi.integral(), 3.0)
+  assert_eq(pi.step(0.0), 3.0)
 }
