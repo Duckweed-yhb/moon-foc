@@ -1,6 +1,6 @@
 # moon-foc
 
-> Working-tree verification (2026-11-19): native, js, wasm-gc and wasm each pass 174/174. Native strict checks and formatting pass.
+> Working-tree verification (2026-11-20): native, js, wasm-gc and wasm each pass 177/177. Native strict checks and formatting pass.
 
 [中文](./README.md) · English
 
@@ -92,7 +92,10 @@ let (id, iq, vd, vq, da, db, dc) = ctrl.step(ia, ib, ic, theta_e, id_ref, iq_ref
   duties return zero together; `reset()` clears both d/q integrators.
 - `motor/` is an offline simplified PMSM model: R, Ld, Lq, ψf and pole pairs are
   parameterized; d/q first-order equations are integrated with explicit Euler, and
-  electrical speed is given externally. `motor/mechanical.mbt` adds a single-inertia
+  electrical speed is given externally. The d-axis `−ωe·Lq·iq` cross-coupling term
+  is off by default and `enable_cross_coupling()` turns it on to match the full d/q
+  equations; keeping it off leaves every existing example and reading unchanged.
+  `motor/mechanical.mbt` adds a single-inertia
   mechanical equation (`J·dωm/dt = Te − TL − B·ωm`) that integrates the torque from
   the currents into speed for the speed loop.
 - `examples/foc_sim` steps the current loop on this simplified model at standstill,
@@ -104,7 +107,8 @@ moon run examples/foc_sim --target native
 ```
 
 Implemented and verified: d/q current tracking, voltage clamp, PI anti-windup,
-the first-order dynamics of the simplified model, model-based decoupling
+the first-order dynamics of the simplified model, the optional d/q cross-coupling
+term (off by default), model-based decoupling
 feedforward, the speed loop and the single-inertia mechanical equation, and a
 steady-state field-weakening reference derived from the voltage limit. Not
 implemented (out of plan): sensorless observer, four-quadrant operation, real
@@ -375,7 +379,7 @@ python -m http.server 8765             # run from the repo root, then open http:
 The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
-CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 174/174 on native, js, wasm-gc and wasm.
+CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 177/177 on native, js, wasm-gc and wasm.
 
 ```
 moon check --deny-warn --target wasm-gc

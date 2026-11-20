@@ -43,14 +43,14 @@
 
 | 申报书原文 | 现状 | 说明 |
 |---|---|---|
-| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通；当前 native / js / wasm-gc / wasm 各 174 测试 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
-| 「36 个单测」 | 174 | 新增包的测试 + 每轮修复补的回归用例 |
+| 「legacy wasm 受本机工具链环境限制未跑，不宣称四后端覆盖」 | wasm 已跑通；当前 native / js / wasm-gc / wasm 各 177 测试 | 2026-11-11 工具链升级到 0.1.20261104 并补齐 core 的预编译 bundle 后解除，不是代码变化 |
+| 「36 个单测」 | 177 | 新增包的测试 + 每轮修复补的回归用例 |
 
 ## 四、验证证据（可复现）
 
 ```bash
 moon check --deny-warn --target wasm        # 四个目标逐个跑，下同
-moon test --target wasm                    # 174/174
+moon test --target wasm                    # 177/177
 moon run examples/demo --target native     # 变换与占空比数值
 moon run examples/waveform --target native # 七段式时序图
 moon run examples/reject_demo --target native  # 每条拒绝路径
