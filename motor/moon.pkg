@@ -12,3 +12,8 @@ import {
   "Duckweed/moon-foc/angle",
   "Duckweed/moon-foc/coord",
 }
+
+// 黑盒测试要拿 controller 的解耦前馈做对照，只给测试用，不进库依赖。
+import {
+  "Duckweed/moon-foc/controller",
+} for "test"

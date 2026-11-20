@@ -1,13 +1,16 @@
 // motor/motor.mbt — 简化 PMSM 电气模型。
 //
-// d/q 轴一阶方程：
-//   did/dt = (vd − R·id) / Ld
+// d/q 轴一阶方程（交叉项默认关闭，见 `enable_cross_coupling`）：
+//   did/dt = (vd − R·id + cc·ωe·Lq·iq) / Ld
 //   diq/dt = (vq − R·iq − ωe·(ψf + Ld·id)) / Lq
+// 其中 cc 为 0/1。默认关闭时退化成：
+//   did/dt = (vd − R·id) / Ld
 //
 // q 轴反电势按交轴磁链 ψf + Ld·id 计：负 id 会把气隙磁链压下去，这正是弱磁
-// 能换转速的物理来源，不写这一项的话弱磁在仿真里不起作用。d 轴仍忽略
-// −ωe·Lq·iq 交叉项，与 `feedforward.decoupling_terms` 的完整式不同 ——
-// 仿真里只补模型确实拥有的项，别给被控对象注入它没有的电压。
+// 能换转速的物理来源，不写这一项的话弱磁在仿真里不起作用；这一项里的
+// ωe·Ld·id 同时也是 d→q 的交叉耦合，所以 q 轴方程不需要另加开关项。
+// d 轴的 −ωe·Lq·iq 默认忽略，开启交叉耦合后补上，与
+// `feedforward.decoupling_terms` 的完整式一致（前馈里另有 R·i 压降不在模型内）。
 // 角度由电角速度积分：θe ← θe + ωe·dt，归一化到 [0, 2π)。
 //
 // 这是给闭环仿真和回归测试用的简化被控对象：参数化、可步进、可读出
@@ -25,6 +28,8 @@ pub struct PmsmModel {
   psi_f : Double
   /// 极对数；电角速度 = 机械角速度 × 极对数。
   pole_pairs : Int32
+  /// 是否计入 d/q 交叉耦合项（−ωe·Lq·iq / −ωe·Ld·id），默认 false。
+  mut coupled : Bool
   /// 当前 d/q 电流（安培）。
   mut id : Double
   mut iq : Double
@@ -54,6 +59,7 @@ pub fn PmsmModel::new(
     lq: lq_safe,
     psi_f,
     pole_pairs: pp,
+    coupled: false,
     id: 0.0,
     iq: 0.0,
     theta_e: 0.0,
@@ -63,6 +69,28 @@ pub fn PmsmModel::new(
       0.0
     },
   }
+}
+
+///|
+/// 打开 d/q 交叉耦合项：d 轴计入 +ωe·Lq·iq（物理上的 −ωe·Lq·iq 压降移项后）。
+///
+/// q 轴方程不用改：其中的 ωe·Ld·id 就是 d→q 耦合，一直在算。默认关闭
+/// （构造时 `coupled = false`），所以既有示例与回归读数不变；
+/// 这个开关只影响被控对象本身，不会替你补控制器侧的解耦前馈。
+pub fn PmsmModel::enable_cross_coupling(self : PmsmModel) -> Unit {
+  self.coupled = true
+}
+
+///|
+/// 关闭 d/q 交叉耦合项，回到默认的简化方程。
+pub fn PmsmModel::disable_cross_coupling(self : PmsmModel) -> Unit {
+  self.coupled = false
+}
+
+///|
+/// 当前是否计入 d/q 交叉耦合项。
+pub fn PmsmModel::cross_coupling_enabled(self : PmsmModel) -> Bool {
+  self.coupled
 }
 
 ///|
@@ -93,7 +121,9 @@ pub fn PmsmModel::step(
   if !(finite(vd) && finite(vq) && finite(dt) && dt > 0.0) {
     return
   }
-  let did = (vd - self.r * self.id) / self.ld
+  let cc = if self.coupled { 1.0 } else { 0.0 }
+  let did = (vd - self.r * self.id + cc * self.omega_e * self.lq * self.iq) /
+    self.ld
   let diq = (
       vq - self.r * self.iq - self.omega_e * (self.psi_f + self.ld * self.id)
     ) /
