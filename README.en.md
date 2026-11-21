@@ -28,6 +28,8 @@ published 2026-11-19):
 moon add Duckweed/moon-foc@0.1.16
 ```
 
+The mooncakes namespace is `Duckweed` while the GitHub repository lives under the `Duckweed-yhb` account. Same author: `moon add` uses the former, repository URLs use the latter.
+
 The bundled `examples/demo` can still be run directly from this repository
 without installing the package.
 
