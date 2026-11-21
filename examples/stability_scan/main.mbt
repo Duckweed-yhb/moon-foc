@@ -93,7 +93,7 @@ fn scan(
 }
 
 ///|
-/// 步长按微秒打印，避免一串 0.00005 这类读数不好对齐。
+/// 步长按微秒打印，避免一串 0.00005 这类读数不好排。
 fn format_dt(dt : Double) -> String {
   let us = dt * 1.0e6
   let text = if us < 100.0 {
