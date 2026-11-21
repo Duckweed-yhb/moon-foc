@@ -2,9 +2,7 @@
 /// Examples/stability_scan 背后的性质：同一套 400 Hz 增益，步长从 100 µs 变到
 /// 1 ms，响应从无超调退化到持续振荡。这里锁住三段读数，防止以后改积分或限幅
 /// 时把采样步长的稳定性边界悄悄挪走。
-fn stability_scan(
-  dt : Double,
-) -> (Double, Double) {
+fn stability_scan(dt : Double) -> (Double, Double) {
   let r = 0.5
   let ld = 0.001
   let lq = 0.001
@@ -16,13 +14,22 @@ fn stability_scan(
   let kp = gains.kp()
   let ki = gains.ki()
   let motor = @motor.PmsmModel::new(r, ld, lq, psi_f, pole_pairs, 0.0)
-  let ctrl = @controller.FocController::new(kp, ki, kp, ki, dt, vdc, -12.0, 12.0)
+  let ctrl = @controller.FocController::new(
+    kp, ki, kp, ki, dt, vdc, -12.0, 12.0,
+  )
   let total = (0.05 / dt).to_int()
   let mut k = 0
   let mut peak = 0.0
   while k < total {
     let (ia, ib, ic) = motor.phase_currents()
-    let (_, _iq, vd, vq, _, _, _) = ctrl.step(ia, ib, ic, motor.theta_e(), 0.0, iq_ref)
+    let (_, _iq, vd, vq, _, _, _) = ctrl.step(
+      ia,
+      ib,
+      ic,
+      motor.theta_e(),
+      0.0,
+      iq_ref,
+    )
     motor.step(vd, vq, dt)
     if motor.iq().abs() > peak {
       peak = motor.iq().abs()

@@ -34,7 +34,9 @@ fn main {
     (1000.0e-6 : Double),
   ]
   for step in steps {
-    let (peak, overshoot, settle, final_err) = scan(r, ld, lq, psi_f, pole_pairs, vdc, iq_ref, kp, ki, step)
+    let (peak, overshoot, settle, final_err) = scan(
+      r, ld, lq, psi_f, pole_pairs, vdc, iq_ref, kp, ki, step,
+    )
     println(
       format_dt(step) +
       "   " +
@@ -67,7 +69,9 @@ fn scan(
   dt : Double,
 ) -> (Double, Double, Double, Double) {
   let motor = @motor.PmsmModel::new(r, ld, lq, psi_f, pole_pairs, 0.0)
-  let ctrl = @controller.FocController::new(kp, ki, kp, ki, dt, vdc, -12.0, 12.0)
+  let ctrl = @controller.FocController::new(
+    kp, ki, kp, ki, dt, vdc, -12.0, 12.0,
+  )
   let total = (0.05 / dt).to_int()
   let band = 0.02 * iq_ref
   let mut k = 0
@@ -75,7 +79,14 @@ fn scan(
   let mut last_out = 0
   while k < total {
     let (ia, ib, ic) = motor.phase_currents()
-    let (_, _iq, vd, vq, _, _, _) = ctrl.step(ia, ib, ic, motor.theta_e(), 0.0, iq_ref)
+    let (_, _iq, vd, vq, _, _, _) = ctrl.step(
+      ia,
+      ib,
+      ic,
+      motor.theta_e(),
+      0.0,
+      iq_ref,
+    )
     motor.step(vd, vq, dt)
     let value = motor.iq()
     if value.abs() > peak {
@@ -88,7 +99,11 @@ fn scan(
   }
   let settle = last_out.to_double() * dt
   let final_err = (motor.iq() - iq_ref).abs()
-  let overshoot = if peak > iq_ref { (peak - iq_ref) / iq_ref * 100.0 } else { 0.0 }
+  let overshoot = if peak > iq_ref {
+    (peak - iq_ref) / iq_ref * 100.0
+  } else {
+    0.0
+  }
   (peak, overshoot, settle, final_err)
 }
 
