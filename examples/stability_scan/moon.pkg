@@ -1,0 +1,11 @@
+///|
+/// examples/stability_scan — 固定电流环增益，扫描仿真步长，打印阶跃响应的
+/// 峰值、超调、调节时间与末拍误差。
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "Duckweed/moon-foc/controller",
+  "Duckweed/moon-foc/motor",
+}
