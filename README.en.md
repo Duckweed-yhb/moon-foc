@@ -1,6 +1,6 @@
 # moon-foc
 
-> Working-tree verification (2026-11-20): native, js, wasm-gc and wasm each pass 177/177. Native strict checks and formatting pass.
+> Working-tree verification (2026-11-21): native, js, wasm-gc and wasm each pass 180/180. Native strict checks and formatting pass.
 
 [中文](./README.md) · English
 
@@ -359,6 +359,33 @@ moon run examples/sampling_loop --target native
 22.5 / 33 / 4.5 µs, the preferred pair is `(0,1)`, and the reconstruction gives
 `ic = -1.012` with zero residual.
 
+### Sampling step and numerical stability
+
+`examples/stability_scan` keeps one set of current-loop gains designed for 400 Hz
+(R=0.5 Ω, L=1 mH, standstill, Vdc=24 V, ±12 V limits) and only changes the
+simulation step. Local native readings (2026-11-21):
+
+| Step | Peak | Overshoot | Back in ±2% band | Final error |
+|---|---|---|---|---|
+| 50 µs | 2.0000 A | 0 | 0 | 3.1e-13 A |
+| 100 µs | 2.0000 A | 0 | 0 | 8.8e-13 A |
+| 200 µs | 2.0000 A | 0 | 0 | 3.3e-12 A |
+| 500 µs | 3.1416 A | 57.1% | 4 ms | 3.9e-11 A |
+| 1 ms | 8.2301 A | 311.5% | not settled | 10 A (sustained oscillation) |
+
+The usable step of the explicit-Euler plant is set by the closed-loop gain as
+well as `L/R`: the same gains are clean up to 200 µs, show visible overshoot at
+500 µs, and oscillate at 1 ms. `simulation/stability_scan_test.mbt` pins the
+100 µs / 500 µs / 1 ms readings so a change to the PI or the limiter cannot move
+that boundary silently.
+
+```bash
+moon run examples/stability_scan --target native
+```
+
+This is an offline observation tool, not a sizing rule; a real controller still
+has to account for switching frequency, sampling delay and current ripple.
+
 ## Browser demo (`docs/demo`)
 
 `examples/web_demo` evaluates a whole parameter grid and prints JSON lines to the console (one `META` line with design readouts, one `DATA` line per panel); `docs/demo/index.html` captures those lines, draws them, and adds parameter sliders. Every number on the page comes from a function in `controller/` or `motor/` - the JavaScript never re-derives the model.
@@ -379,7 +406,7 @@ python -m http.server 8765             # run from the repo root, then open http:
 The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
-CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 177/177 on native, js, wasm-gc and wasm.
+CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 180/180 on native, js, wasm-gc and wasm.
 
 ```
 moon check --deny-warn --target wasm-gc
