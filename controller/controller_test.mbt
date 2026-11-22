@@ -238,6 +238,34 @@ test "vector saturation recalculates the integrator instead of winding up" {
 }
 
 ///|
+/// 矢量限幅的退饱和行为：给定回零后要在一拍内离开限幅区，而不是继续顶着
+/// 上限几十拍。这个读数来自回算积分项，`--deny-warn` 看不出。
+test "vector saturation releases within one step after reference returns to zero" {
+  let dt = 1.0e-4
+  let vdc = 24.0
+  let v_linear = vdc / 3.0.sqrt()
+  let ctrl = @controller.FocController::new_limited(
+    10.0, 100.0, 10.0, 100.0, dt, vdc, -100.0, 100.0, v_linear,
+  )
+  let mut k = 0
+  while k < 200 {
+    let (_, _, vd, vq, _, _, _) = ctrl.step(0.0, 0.0, 0.0, 0.0, 1.5, 1.5)
+    assert_true((vd * vd + vq * vq).sqrt() >= v_linear - 1.0e-9)
+    k += 1
+  }
+  // 给定归零：积分项已被回算到 v_lim − kp·err，第一拍就不再裁幅
+  let (_, _, vd0, vq0, _, _, _) = ctrl.step(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  assert_true((vd0 * vd0 + vq0 * vq0).sqrt() < v_linear - 1.0e-6)
+  // 再走三拍，电压继续朝零收，不会反弹回限幅
+  let mut j = 0
+  while j < 3 {
+    let (_, _, vd, vq, _, _, _) = ctrl.step(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    assert_true((vd * vd + vq * vq).sqrt() < v_linear)
+    j += 1
+  }
+}
+
+///|
 test "reset clears both integrators" {
   let dt = 1.0e-4
   let ctrl = @controller.FocController::new(
