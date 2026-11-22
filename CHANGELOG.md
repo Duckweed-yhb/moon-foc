@@ -10,9 +10,12 @@
 - `motor/moon.pkg` 给黑盒测试单列 controller 依赖（`for "test"`），库本身不新增依赖。
 - `examples/stability_scan`：固定 400 Hz 整定增益，扫描 50 µs 到 1 ms 五个步长，打印峰值、超调、回带时间与末拍误差。100 µs 及以下无超调；500 µs 超调 57.1%；1 ms 持续振荡（峰值 8.2301 A）。配套 `simulation/stability_scan_test.mbt` 三条回归钉住 100 µs / 500 µs / 1 ms 三段读数。
 
+- `controller/controller_test.mbt`：矢量限幅的退饱和回归。给定 1.5 A 把合成电压顶到 13.86 V 限幅 200 拍后归零，断言第一拍就回到线性区、随后三拍继续朝零收，钉住回算积分项的恢复速度。
+
 ### Changed
 
-- README 中英文、DELIVERY 的测试计数同步为本轮实测：四后端各 180。
+- README 中英文、DELIVERY 的测试计数同步为本轮实测：四后端各 181。
+- `controller/controller_test.mbt` 的新增回归让四后端测试数从 180 升到 181。
 
 ## [0.1.16] - 2026-11-19
 
