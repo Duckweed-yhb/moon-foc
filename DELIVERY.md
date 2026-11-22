@@ -12,7 +12,7 @@
 
 | 项 | 申报书（2026-10-19） | 现在 |
 |---|---|---|
-| 版本 | 0.1.3 | **0.1.16**（mooncakes 最新，2026-11-19 发布） |
+| 版本 | 0.1.3 | **0.1.17**（mooncakes 最新，2026-11-22 发布） |
 | 单测 | 36 | **173**（native / js / wasm-gc / wasm 各 173） |
 | 后端覆盖 | wasm-gc / native / js 三后端 | **wasm / wasm-gc / js / native 四后端**（wasm 仅本机实测，未进 CI 矩阵） |
 | commits | 29 | 持续追加（提交数以 `git log` 为准；是否已推送看 `git log origin/main..HEAD`） |
@@ -63,7 +63,7 @@ moon run examples/foc_sim --target native  # 电流环闭环阶跃跟踪
 
 ## 五、发布状态
 
-- mooncakes：`Duckweed/moon-foc@0.1.16`（Latest，2026-11-19）。
+- mooncakes：`Duckweed/moon-foc@0.1.17`（Latest，2026-11-22）。
 - GitHub tag 只到 **v0.1.3**，落后 10 个已发布版本。**以 mooncakes 上的版本为准**；
   tag 是早期手工打的，没有逐个补。
 

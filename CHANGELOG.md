@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+（暂无）
+
+## [0.1.17] - 2026-11-22
+
 ### Added
 
 - `PmsmModel` 增加可选的 d/q 交叉耦合项：`enable_cross_coupling()` 打开后 d 轴方程计入 `+ωe·Lq·iq`（即 `−ωe·Lq·iq` 压降移项），`disable_cross_coupling()` 关回去，`cross_coupling_enabled()` 读当前状态。默认关闭，既有示例与 174 项读数保持不变；q 轴方程不用改，其中的 `ωe·Ld·id` 本来就是 d→q 耦合。回归三条：开启后 iq 在 d 轴上拖出电流而同构未开启的 id 恒为 0；用 `decoupling_terms` 的 `vd_ff` 加 `vq_ff + R·iq` 作电压时 id 与 iq 都站住；开关可读可关。

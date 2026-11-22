@@ -21,11 +21,11 @@ and from 0.04 s reaches iq≈2.0 A, id=0, steady vq≈1.0 V.
 
 ## Install
 
-Published to mooncakes as `Duckweed/moon-foc@0.1.16` (release 0.1.16, MIT,
-published 2026-11-19):
+Published to mooncakes as `Duckweed/moon-foc@0.1.17` (release 0.1.17, MIT,
+published 2026-11-22):
 
 ```
-moon add Duckweed/moon-foc@0.1.16
+moon add Duckweed/moon-foc@0.1.17
 ```
 
 The mooncakes namespace is `Duckweed` while the GitHub repository lives under the `Duckweed-yhb` account. Same author: `moon add` uses the former, repository URLs use the latter.
