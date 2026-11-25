@@ -39,7 +39,7 @@ pub fn hexagon_radius(alpha : Double, beta : Double, vdc : Double) -> Double {
     return 0.0
   }
   // 零矢量方向无定义，边界按内切圆给（扇区轴线处本来就等于内切圆）。
-  let vref = (alpha * alpha + beta * beta).sqrt()
+  let vref = @math.hypot(alpha, beta)
   if vref <= 0.000000000001 {
     return vdc / 3.0.sqrt()
   }
@@ -70,7 +70,7 @@ pub fn project_to_hexagon(
   if !finite(alpha) || !finite(beta) || !finite(vdc) || vdc <= 0.0 {
     return (0.0, 0.0)
   }
-  let vref = (alpha * alpha + beta * beta).sqrt()
+  let vref = @math.hypot(alpha, beta)
   if vref <= 0.000000000001 {
     return (0.0, 0.0)
   }
@@ -92,7 +92,7 @@ pub fn clipping_ratio(alpha : Double, beta : Double, vdc : Double) -> Double {
   if !finite(alpha) || !finite(beta) || !finite(vdc) || vdc <= 0.0 {
     return 0.0
   }
-  let vref = (alpha * alpha + beta * beta).sqrt()
+  let vref = @math.hypot(alpha, beta)
   if vref <= 0.000000000001 {
     return 0.0
   }

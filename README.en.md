@@ -1,6 +1,6 @@
 # moon-foc
 
-> Working-tree verification (2026-11-22): native, js, wasm-gc and wasm each pass 181/181. Native strict checks and formatting pass.
+> Working-tree verification (2026-11-25): native, js, wasm-gc and wasm each pass 184/184. Native strict checks and formatting pass.
 
 [中文](./README.md) · English
 
@@ -215,6 +215,8 @@ steady value, which looks like a steady-state error but is the slow mode still
 settling. The module instead puts the integral time constant at one fifth of the
 bandwidth: `Kp = ω_bw·J/Kt`, `Ki = Kp·ω_bw/5`.
 
+In the source tree, `drive.set_cross_coupling(true)` enables the plant cross term and matching voltage feedforward together. Switching preserves PI state.
+
 The public `simulation.SpeedDrive` runs the same cascaded controller one sample at a time. Call `drive.step(speed_ref, load_torque)` with speed in rad/s and load in N·m. The single-direction model rejects negative speed commands before changing state. Its constructor accepts inductances of at least 1 nH and inertia of at least 1e-12 kg·m² so the PI design and simulated motor use the same parameters.
 
 `examples/speed_loop` uses R=0.5 Ω, Ld=0.8 mH, Lq=1.2 mH, ψf=0.05 Wb, pp=4
@@ -408,7 +410,7 @@ python -m http.server 8765             # run from the repo root, then open http:
 The artifact sits next to the page and needs no CDN, so opening `docs/demo/index.html` directly also works. The full grid takes about 127 ms under node, so page load has no perceptible delay. The step counts live in two places - the sweep ranges in `examples/web_demo/main.mbt` and the slider ranges on the page - and both must be changed together. GitHub Pages hosting needs `docs/` to be set as the publishing source in the repository settings; that step is outside the repo.
 ## Test
 
-CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 181/181 on native, js, wasm-gc and wasm.
+CI runs formatting, a wasm / wasm-gc / js / native matrix of strict checks, builds and tests, five native examples (demo, waveform, reject_demo, foc_sim, speed_loop), and release metadata checks. Current working-tree tests pass 184/184 on native, js, wasm-gc and wasm.
 
 ```
 moon check --deny-warn --target wasm-gc

@@ -144,6 +144,20 @@ pub fn SpeedDrive::new(
 }
 
 ///|
+/// Switch the electrical plant and its matching voltage feedforward together.
+/// The default is the simplified plant. Switching preserves controller state.
+pub fn SpeedDrive::set_cross_coupling(
+  self : SpeedDrive,
+  enabled : Bool,
+) -> Unit {
+  if enabled {
+    self.electrical.enable_cross_coupling()
+  } else {
+    self.electrical.disable_cross_coupling()
+  }
+}
+
+///|
 pub fn SpeedDrive::omega_m(self : SpeedDrive) -> Double {
   self.mechanical.omega_m()
 }
@@ -172,8 +186,25 @@ pub fn SpeedDrive::step(
   let iq_ref = self.speed.step(omega_ref, m.omega_m())
   let vd_pi = self.d_pi.step(-e.id())
   let vq_pi = self.q_pi.step(iq_ref - e.iq())
-  let emf = @controller.back_emf_voltage(m.omega_e(), p.magnet_flux)
-  let (vd, vq) = @controller.apply_feedforward(vd_pi, vq_pi, 0.0, emf, t.vdc)
+  let (vd_ff, vq_ff) = if e.cross_coupling_enabled() {
+    @controller.decoupling_terms(
+      m.omega_e(),
+      p.ld,
+      p.lq,
+      p.magnet_flux,
+      e.id(),
+      e.iq(),
+    )
+  } else {
+    (0.0, @controller.back_emf_voltage(m.omega_e(), p.magnet_flux))
+  }
+  let (vd, vq) = @controller.apply_feedforward(
+    vd_pi,
+    vq_pi,
+    vd_ff,
+    vq_ff,
+    t.vdc,
+  )
   e.set_speed(m.omega_m())
   e.step(vd, vq, t.dt)
   let torque = @motor.electromagnetic_torque(

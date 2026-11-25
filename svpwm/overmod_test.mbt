@@ -118,3 +118,11 @@ test "over modulation geometry rejects degenerate input without NaN" {
   assert_eq(pb, 0.0)
   assert_eq(@svpwm.clipping_ratio(1.0, 1.0, -48.0), 0.0)
 }
+
+///|
+test "hexagon projection retains direction for a large finite reference" {
+  let (a, b) = @svpwm.project_to_hexagon(3.0e200, -4.0e200, 48.0)
+  let expected = @svpwm.hexagon_radius(3.0, -4.0, 48.0)
+  assert_true((a - 0.6 * expected).abs() < 1.0e-12)
+  assert_true((b + 0.8 * expected).abs() < 1.0e-12)
+}

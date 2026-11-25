@@ -23,3 +23,15 @@ test "normalize_angle keeps the usual cases" {
   )
   assert_eq(@angle.normalize_angle(6.283185307179586), 0.0)
 }
+
+///|
+test "finite mechanical angles remain in range when scaling overflows" {
+  for angle in [1.0e308, -1.0e308] {
+    let result = @angle.mechanical_to_electrical(angle, 8)
+    assert_true(result >= 0.0 && result < 6.283185307179586)
+    assert_eq(
+      result,
+      @angle.mechanical_to_electrical(@angle.normalize_angle(angle), 8),
+    )
+  }
+}

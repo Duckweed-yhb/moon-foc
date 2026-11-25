@@ -28,7 +28,12 @@ pub fn mechanical_to_electrical(
   mech_angle : Double,
   pole_pairs : Int32,
 ) -> Double {
-  normalize_angle(mech_angle * pole_pairs.to_double())
+  let pairs = pole_pairs.to_double()
+  let product = mech_angle * pairs
+  if product.is_inf() && !mech_angle.is_inf() {
+    return normalize_angle(normalize_angle(mech_angle) * pairs)
+  }
+  normalize_angle(product)
 }
 
 ///|
