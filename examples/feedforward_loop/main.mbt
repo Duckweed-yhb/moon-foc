@@ -51,16 +51,16 @@ fn main {
     )
     println(
       "  不加前馈：进入 ±2% 用时 " +
-      round4(plain.0) +
-      " ms，最大偏差 " +
+      entry_time(plain.0) +
+      "，最大偏差 " +
       round4(plain.1) +
       " A，末拍 iq " +
       round4(plain.2),
     )
     println(
       "  加前馈：  进入 ±2% 用时 " +
-      round4(with_ff.0) +
-      " ms，最大偏差 " +
+      entry_time(with_ff.0) +
+      "，最大偏差 " +
       round4(with_ff.1) +
       " A，末拍 iq " +
       round4(with_ff.2),
@@ -73,7 +73,7 @@ fn main {
 
 ///|
 /// 跑一段起步过程，返回 (进入 ±2% 带用时 ms, 最大偏差 A, 末拍 iq)。
-/// 若始终没进带，用时记满量程 `steps·dt·1000`。
+/// 若观察期间始终没有进带，返回 None。
 fn run(
   r : Double,
   ld : Double,
@@ -87,7 +87,7 @@ fn run(
   vdc : Double,
   bandwidth_hz : Double,
   use_ff : Bool,
-) -> (Double, Double, Double) {
+) -> (Double?, Double, Double) {
   let motor = @motor.PmsmModel::new(r, ld, lq, psi_f, pole_pairs, omega_m)
   motor.enable_cross_coupling()
   let dg = @controller.design_current_loop(r, ld, bandwidth_hz)
@@ -97,7 +97,7 @@ fn run(
   let pi_q = @pi.Pi::new(qg.kp(), qg.ki(), dt, -limit, limit)
   let band = 0.02 * iq_ref
   let mut worst = 0.0
-  let mut settled_at = steps
+  let mut settled_at : Double? = None
   for i in 0..<steps {
     let id = motor.id()
     let iq = motor.iq()
@@ -121,16 +121,32 @@ fn run(
     if err > worst {
       worst = err
     }
-    if settled_at == steps && err <= band {
-      settled_at = i + 1
+    if settled_at is None && err <= band {
+      settled_at = Some((i + 1).to_double() * dt * 1000.0)
     }
   }
-  let ms = settled_at.to_double() * dt * 1000.0
-  (ms, worst, motor.iq())
+
+  (settled_at, worst, motor.iq())
 }
 
 ///|
 fn round4(x : Double) -> String {
   let q = (x * 10000.0).round()
   (q / 10000.0).to_string()
+}
+
+///|
+fn entry_time(ms : Double?) -> String {
+  match ms {
+    Some(t) => round4(t) + " ms"
+    None => "观察期间未进带"
+  }
+}
+
+///|
+test "unreached target has no first-entry time" {
+  let (time, _, _) = run(
+    0.5, 0.0008, 0.0012, 0.05, 4, 100.0, 0.00001, 1, 5.0, 48.0, 400.0, true,
+  )
+  assert_eq(time, None)
 }
