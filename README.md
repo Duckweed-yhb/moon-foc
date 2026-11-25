@@ -210,7 +210,7 @@ for i in 0..<20000 {
 moon run examples/speed_loop --target native
 ```
 
-源码中的 `drive.set_cross_coupling(true)` 可同时启用电机的 d 轴交叉项和匹配的解耦前馈。切换保留 PI 状态；默认示例使用简化模型。
+源码中的 `drive.set_cross_coupling(true)` 可同时启用电机的 d 轴交叉项和匹配的解耦前馈。切换保留 PI 状态，`cross_coupling_enabled()` 可核对当前模式。`bandwidth_ratio()` 返回速度环与电流环带宽之比，`bandwidth_ok(0.2)` 可检查是否满足至少 5:1 的调用方设计约束。默认示例使用简化模型。
 
 边界：机械模型是单惯量、摩擦只留线性 `B`、`SpeedDrive::new` 要求 d/q 电感均至少为 1 nH、惯量至少为 1e-12 kg·m²，使控制器整定和被控模型使用相同的参数。`SpeedDrive::step` 对负转速给定返回 Err，并保持控制器与电机状态；机械转速钳非负（不做四象限与反转），欧拉积分步长要调用方自己保证稳定；速度环只有 PI 与输出限幅，没有加速度前馈、没有观测器；弱磁不在速度环内部，由 `field_weakening_id` 外接（见下一节）。示例里的电气模型没有 d/q 交叉项，所以电压前馈只补反电动势一项 - 硬塞 `vd_ff` 等于给模型注入一个它不存在的扰动，读数会假。
 

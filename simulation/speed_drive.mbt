@@ -165,6 +165,23 @@ pub fn SpeedDrive::cross_coupling_enabled(self : SpeedDrive) -> Bool {
 }
 
 ///|
+/// Return the configured speed-loop to current-loop bandwidth ratio.
+pub fn SpeedDrive::bandwidth_ratio(self : SpeedDrive) -> Double {
+  self.tuning.speed_hz / self.tuning.current_hz
+}
+
+///|
+/// Check the configured cascade against a caller-selected maximum bandwidth
+/// ratio. A common design limit is 0.2, meaning at least 5:1 separation.
+pub fn SpeedDrive::bandwidth_ok(self : SpeedDrive, max_ratio : Double) -> Bool {
+  @controller.speed_bandwidth_ok(
+    self.tuning.speed_hz,
+    self.tuning.current_hz,
+    max_ratio,
+  )
+}
+
+///|
 pub fn SpeedDrive::omega_m(self : SpeedDrive) -> Double {
   self.mechanical.omega_m()
 }

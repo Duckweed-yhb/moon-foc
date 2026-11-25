@@ -1,6 +1,6 @@
 # moon-foc
 
-> Working-tree verification (2026-11-25): native, js, wasm-gc and wasm each pass 185/185. Native strict checks and formatting pass.
+> Working-tree verification (2026-11-25): native, js, wasm-gc and wasm each pass 186/186. Native strict checks and formatting pass.
 
 [中文](./README.md) · English
 
@@ -208,7 +208,7 @@ steady value, which looks like a steady-state error but is the slow mode still
 settling. The module instead puts the integral time constant at one fifth of the
 bandwidth: `Kp = ω_bw·J/Kt`, `Ki = Kp·ω_bw/5`.
 
-In the source tree, `drive.set_cross_coupling(true)` enables the plant cross term and matching voltage feedforward together. Switching preserves PI state.
+In the source tree, `drive.set_cross_coupling(true)` enables the plant cross term and matching voltage feedforward together. Switching preserves PI state, and `cross_coupling_enabled()` reports the active mode. `bandwidth_ratio()` returns the configured speed/current bandwidth ratio; `bandwidth_ok(0.2)` checks a caller-selected 5:1 separation rule.
 
 The public `simulation.SpeedDrive` runs the same cascaded controller one sample at a time. Call `drive.step(speed_ref, load_torque)` with speed in rad/s and load in N·m. The single-direction model rejects negative speed commands before changing state. Its constructor accepts inductances of at least 1 nH and inertia of at least 1e-12 kg·m² so the PI design and simulated motor use the same parameters.
 

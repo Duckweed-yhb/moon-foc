@@ -53,6 +53,11 @@ test "rejected commands leave the next valid sample reproducible" {
 test "drive validates setup before simulation" {
   let p = motor_params()
   let t = drive_tuning()
+  let drive = @simulation.SpeedDrive::new(p, t).unwrap()
+  assert_true((drive.bandwidth_ratio() - 0.1).abs() < 1.0e-12)
+  assert_true(drive.bandwidth_ok(0.2))
+  assert_false(drive.bandwidth_ok(0.05))
+  assert_false(drive.bandwidth_ok(0.0 / 0.0))
   assert_true(@simulation.SpeedDrive::new({ ..p, pole_pairs: 0, }, t) is Err(_))
   assert_true(@simulation.SpeedDrive::new({ ..p, ld: 0.0, }, t) is Err(_))
   for

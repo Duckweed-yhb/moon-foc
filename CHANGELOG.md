@@ -4,7 +4,7 @@
 
 ## [Unreleased]
 
-- `SpeedDrive::cross_coupling_enabled` 公开当前交叉耦合模式，便于调用方在参数扫描和日志中核对模型配置；`step` 文档明确负载转矩可为负，负值表示助力转矩。
+- `SpeedDrive::cross_coupling_enabled` 公开当前交叉耦合模式，`bandwidth_ratio` 与 `bandwidth_ok` 让调用方核对级联环路的带宽分离；`step` 文档明确负载转矩可为负，负值表示助力转矩。
 - `SpeedDrive::set_cross_coupling` 可在仿真期间一起切换电机交叉项与电压解耦前馈。
 - 修复机械角乘极对数溢出时的角度归一化，以及大幅值参考矢量投影至 SVPWM 六边形后方向丢失的问题。
 
