@@ -1,22 +1,18 @@
 # moon-foc
 
-> 本地源码验证（2026-11-22）：Native、JS、Wasm、Wasm-GC 四个后端各通过 181/181 项测试，Native 严格编译检查通过。
-
 [English](./README.en.md)
 
-MoonBit 实现的 PMSM 磁场定向控制（FOC）数值库：闭环电流环控制器、简化电机模型，以及底层 SVPWM 调制与坐标变换。
+用 MoonBit 在上板前模拟永磁同步电机的磁场定向控制（FOC）。给定电机参数、目标转速和负载转矩，`simulation.SpeedDrive` 按采样周期输出电流、转矩和转速。
 
-面向磁场定向控制（FOC）的纯数值核心：空间矢量 PWM（六扇区判断、T1/T2 有效矢量作用时间、过调制钳位），Clarke / Park / 反 Park 变换，机械角度到电角度的换算，外加串起整条电流环的 `controller/` 控制器对象、从电机参数整定 PI 增益的设计层、电流采样侧的第三相重构与采样窗口判据，以及离线仿真用的简化 `motor/` 电气模型。不使用 C FFI，不做任何 I/O。当前测试结果见文首验证说明。
+也可以单独使用 Clarke/Park 变换、PI 整定、电流采样重构和 SVPWM 调制。控制器与电机模型只做数值计算，采样和 PWM 输出由调用方接入。
 
 ## 安装
 
-已发布到 mooncakes：`Duckweed/moon-foc@0.1.17`（MIT；发布记录：2026-11-22）：
+在 MoonBit 项目中安装：
 
-```
+```sh
 moon add Duckweed/moon-foc@0.1.17
 ```
-
-包在 mooncakes 上的命名空间是 `Duckweed`，GitHub 仓库挂在 `Duckweed-yhb` 账号下。两者是同一位作者，`moon add` 用前者，仓库地址用后者。
 
 仓库自带的 `examples/demo` 也可以不安装包，直接在本仓库运行。
 
@@ -348,6 +344,10 @@ python scripts/gen_fixtures.py
 MIT © 2026 Duckweed-yhb
 
 来源、第三方参考、测试数据与 AI 使用范围见 [`PROVENANCE.md`](PROVENANCE.md)。
+
+## 测试记录
+
+本地源码验证（2026-11-22）：Native、JS、Wasm、Wasm-GC 四个后端各通过 181/181 项测试，Native 严格编译检查通过。
 
 ## 测试依据
 

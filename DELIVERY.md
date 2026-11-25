@@ -1,15 +1,24 @@
 # 发布与验证
 
-在 MoonBit 工程中运行 `moon add Duckweed/moon-foc@0.1.17` 安装此版本。
+## 安装
+
+```sh
+moon add Duckweed/moon-foc@0.1.17
+```
 
 ## 从源码复现
 
-在仓库根目录运行以下命令。
+在仓库根目录检查格式、编译并运行测试：
 
 ```sh
 moon fmt --check
 moon check --target native --deny-warn
 moon test --target native
+```
+
+## 比较两种速度环带宽
+
+```sh
 moon run examples/speed_loop --target native
 ```
 
