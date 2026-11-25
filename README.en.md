@@ -175,14 +175,7 @@ preserved; clamping `vd` and `vq` separately would rotate the reference. A non-p
 or non-finite `vdc` disables the clamp and only sums, and non-finite components
 return `(0, 0)` instead of injecting NaN.
 
-`examples/feedforward_loop` runs the two variants side by side with identical
-parameters and gains (iq step 0 → 5 A, Vdc 48 V, Ts 10 µs, PI tuned to 400 Hz).
-Native local run (2026-11-14): at ωe=200 the time to enter the ±2 % band drops from
-5.95 ms to 1.5 ms and the peak deviation from 4.999 A to 4.9157 A; at ωe=400 from
-6.99 ms to 1.51 ms and 7.0343 A to 4.9357 A; at ωe=480 from 7.25 ms to 2.58 ms and
-8.1312 A to 4.9691 A. All runs converge to 5 A at the end because the PI integrator
-gives zero steady-state error anyway; the difference is entirely in the transient,
-where the plain loop first has to integrate the back-EMF and overshoots on the way.
+Run `moon run examples/feedforward_loop --target native` to compare the 0 to 5 A iq step at fixed rotor speed. Both cases use motor cross-coupling, identical vector voltage limits and axis-specific PI tuning. At electrical speeds of 200, 400 and 480 rad/s, first entry into the ±2% band took 8.81, 10.34 and 10.69 ms without feedforward and 1.54, 1.30 and 2.74 ms with feedforward.
 
 Limits: the feedforward uses nameplate model parameters, so any mismatch in
 `Ld`/`Lq`/`ψf` shows up as residual error. There is no parameter identification,

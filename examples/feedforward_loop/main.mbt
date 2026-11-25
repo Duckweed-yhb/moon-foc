@@ -2,7 +2,7 @@
 /// examples/feedforward_loop — 解耦前馈在电流环里补掉了什么。
 ///
 /// 同一套电机参数与 PI 增益，只切换「加不加前馈」：
-///   A：PI 输出直接给电压（不加前馈）；
+///   A：PI 输出经电压矢量限幅后送给电机；
 ///   B：PI 输出 + `decoupling_terms()`，再走 `apply_feedforward()` 限幅。
 ///
 /// PI 带积分，稳态误差两种情况都会收敛到零，所以这里看瞬态：
@@ -67,7 +67,7 @@ fn main {
     )
   }
   println(
-    "注：模型无负载，iq 到位后电压只需抵住反电动势与电阻压降；两者末拍都收敛，差别在起步这一段。",
+    "注：机械转速固定。两组均启用电机交叉耦合并限制电压矢量，读数表示电流首次进入目标带的时间。",
   )
 }
 
@@ -89,10 +89,12 @@ fn run(
   use_ff : Bool,
 ) -> (Double, Double, Double) {
   let motor = @motor.PmsmModel::new(r, ld, lq, psi_f, pole_pairs, omega_m)
-  let gains = @controller.design_current_loop(r, ld, bandwidth_hz)
+  motor.enable_cross_coupling()
+  let dg = @controller.design_current_loop(r, ld, bandwidth_hz)
+  let qg = @controller.design_current_loop(r, lq, bandwidth_hz)
   let limit = vdc / 3.0.sqrt()
-  let pi_d = @pi.Pi::new(gains.kp(), gains.ki(), dt, -limit, limit)
-  let pi_q = @pi.Pi::new(gains.kp(), gains.ki(), dt, -limit, limit)
+  let pi_d = @pi.Pi::new(dg.kp(), dg.ki(), dt, -limit, limit)
+  let pi_q = @pi.Pi::new(qg.kp(), qg.ki(), dt, -limit, limit)
   let band = 0.02 * iq_ref
   let mut worst = 0.0
   let mut settled_at = steps
@@ -112,7 +114,7 @@ fn run(
       )
       @controller.apply_feedforward(vd_pi, vq_pi, vd_ff, vq_ff, vdc)
     } else {
-      (vd_pi, vq_pi)
+      @controller.clamp_voltage_vector(vd_pi, vq_pi, limit)
     }
     motor.step(vd, vq, dt)
     let err = (iq_ref - motor.iq()).abs()
@@ -120,7 +122,7 @@ fn run(
       worst = err
     }
     if settled_at == steps && err <= band {
-      settled_at = i
+      settled_at = i + 1
     }
   }
   let ms = settled_at.to_double() * dt * 1000.0
