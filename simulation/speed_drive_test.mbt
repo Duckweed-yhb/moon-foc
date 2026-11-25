@@ -106,12 +106,14 @@ test "loaded steady state satisfies torque balance and q-axis voltage equation" 
 test "loaded drive applies matching d-axis feedforward when coupling is enabled" {
   let p = motor_params()
   let drive = @simulation.SpeedDrive::new(p, drive_tuning()).unwrap()
+  assert_false(drive.cross_coupling_enabled())
   for _ in 0..<15000 {
     ignore(drive.step(80.0, 0.5).unwrap())
   }
   let baseline = drive.step(80.0, 0.5).unwrap()
   assert_eq(baseline.vd, 0.0)
   drive.set_cross_coupling(true)
+  assert_true(drive.cross_coupling_enabled())
   let coupled = drive.step(80.0, 0.5).unwrap()
   let expected_vd = -(baseline.omega_m *
     p.pole_pairs.to_double() *
@@ -122,5 +124,6 @@ test "loaded drive applies matching d-axis feedforward when coupling is enabled"
   assert_true(coupled.id.abs() < 1.0e-9)
   assert_true((coupled.omega_m - 80.0).abs() < 1.0e-6)
   drive.set_cross_coupling(false)
+  assert_false(drive.cross_coupling_enabled())
   assert_true(drive.step(80.0, 0.5).unwrap().vd.abs() < 1.0e-9)
 }

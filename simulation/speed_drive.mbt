@@ -158,12 +158,20 @@ pub fn SpeedDrive::set_cross_coupling(
 }
 
 ///|
+/// Return whether the electrical plant and matching voltage feedforward use
+/// the d/q cross-coupling terms.
+pub fn SpeedDrive::cross_coupling_enabled(self : SpeedDrive) -> Bool {
+  self.electrical.cross_coupling_enabled()
+}
+
+///|
 pub fn SpeedDrive::omega_m(self : SpeedDrive) -> Double {
   self.mechanical.omega_m()
 }
 
 ///|
-/// Apply one sample of speed reference (rad/s) and opposing load torque (N m).
+/// Apply one sample of speed reference (rad/s) and signed load torque (N m).
+/// Positive torque opposes rotation; negative torque assists it.
 /// Reject non-finite commands before updating either controller or plant.
 pub fn SpeedDrive::step(
   self : SpeedDrive,

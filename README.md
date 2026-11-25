@@ -349,7 +349,7 @@ MIT © 2026 Duckweed-yhb
 
 ## 测试记录
 
-本地源码验证（2026-11-25）：Native、JS、Wasm、Wasm-GC 四个后端各通过 185/185 项测试，Native 严格编译检查通过。
+本地源码验证（2026-11-25）：Native、JS、Wasm、Wasm-GC 四个后端各通过 186/186 项测试，Native 严格编译检查通过。
 
 ## 测试依据
 
