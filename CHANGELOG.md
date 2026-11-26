@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 
+- `examples/speed_loop` 直接打印 `SpeedDrive` 保存的带宽比与 5:1 分离检查结果，示例同时验证配置值确实进入级联对象。
 - `SpeedDrive::cross_coupling_enabled` 公开当前交叉耦合模式，`bandwidth_ratio` 与 `bandwidth_ok` 让调用方核对级联环路的带宽分离；`step` 文档明确负载转矩可为负，负值表示助力转矩。
 - `SpeedDrive::set_cross_coupling` 可在仿真期间一起切换电机交叉项与电压解耦前馈。
 - 修复机械角乘极对数溢出时的角度归一化，以及大幅值参考矢量投影至 SVPWM 六边形后方向丢失的问题。

@@ -85,6 +85,12 @@ fn run_case(speed_hz : Double) -> SpeedResponse {
     },
     { vdc, dt, current_hz, speed_hz, iq_limit, },
   ).unwrap()
+  println(
+    "SpeedDrive 带宽比=" +
+    round4(drive.bandwidth_ratio()) +
+    "，5:1 分离检查=" +
+    drive.bandwidth_ok(0.2).to_string(),
+  )
   let mut final_iq = 0.0
 
   let mut t_rise = -1.0
