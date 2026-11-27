@@ -41,10 +41,10 @@ AI-generated tests were checked against the textbook formulas before being kept.
 
 ## Identity
 
-All commits are authored by `Duckweed-yhb`, the same person who registered the
-project. Most commits use `3071974740@qq.com`; one early commit used a
-placeholder address (`duckweed@example.com`) from a default Git configuration.
-Both are the same author; no other person's name or account is used.
+All commits are authored by the GitHub account `Duckweed-yhb`, the same person
+who registered the project. One early commit used the placeholder
+`duckweed@example.com` from a default Git configuration. The placeholder and
+the account refer to the same author; no other person's name or account is used.
 
 ## Licence
 
